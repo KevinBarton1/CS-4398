@@ -1,6 +1,7 @@
 import unittest
 
 from app.routes import plan_route
+from app.traffic_simulator import bpr_adjusted_time
 
 
 class RoutePlanningTests(unittest.TestCase):
@@ -20,6 +21,33 @@ class RoutePlanningTests(unittest.TestCase):
     def test_invalid_location_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "Unknown location"):
             plan_route({**self.payload, "destination": "Mars Colony"})
+
+    def test_bpr_zero_flow_equals_free_flow(self):
+        self.assertEqual(10, bpr_adjusted_time(10, 0, 1000))
+
+    def test_bpr_time_is_monotonic_with_flow(self):
+        low = bpr_adjusted_time(10, 300, 1000)
+        high = bpr_adjusted_time(10, 900, 1000)
+        self.assertGreater(high, low)
+
+    def test_pricing_breakdown_reproduces_final_estimate(self):
+        route = plan_route(self.payload)["routes"][0]
+        factors = route["factors"]
+        reproduced = (
+            factors["route_subtotal"]
+            * factors["demand_multiplier"]
+            * factors["traffic_multiplier"]
+            * factors["weather_multiplier"]
+            * factors["time_multiplier"]
+        )
+        self.assertAlmostEqual(route["estimated_price"], round(reproduced, 2), places=2)
+
+    def test_weather_increases_eta_monotonically(self):
+        eta = [
+            plan_route({**self.payload, "weather": severity})["routes"][0]["adjusted_eta_minutes"]
+            for severity in range(4)
+        ]
+        self.assertEqual(eta, sorted(eta))
 
 
 if __name__ == "__main__":

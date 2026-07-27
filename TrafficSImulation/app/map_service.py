@@ -65,6 +65,7 @@ def build_route_options(origin, destination):
         options.append({
             "id": f"route-{index + 1}",
             "name": ("Fastest", "Balanced", "Low traffic")[index],
+            "objective": ("Minimum adjusted time", "Weighted time, distance, congestion and demand", "Minimum congestion exposure")[index],
             "color": ROUTE_COLORS[index],
             "distance_miles": round(distance, 1),
             "base_eta_minutes": round(distance / average_speed * 60 + 2, 1),
@@ -72,4 +73,3 @@ def build_route_options(origin, destination):
             "road_names": [ROAD_NAMES[(index * 2) % len(ROAD_NAMES)], ROAD_NAMES[(index * 2 + 1) % len(ROAD_NAMES)]],
         })
     return origin_name, destination_name, options
-

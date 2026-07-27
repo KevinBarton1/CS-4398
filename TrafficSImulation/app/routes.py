@@ -1,4 +1,5 @@
 from .heatmap import build_heatmap
+from .config import ROUTE_SCORE_WEIGHTS
 from .map_service import build_route_options
 from .models import RouteOption
 from .pricing_model import estimate_price
@@ -32,20 +33,39 @@ def plan_route(payload):
     routes = []
     for index, route in enumerate(raw_routes):
         route_congestion = max(4, congestion - index * 9)
-        traffic_factor = 1 + route_congestion / 180
-        adjusted_eta = round(route["base_eta_minutes"] * traffic_factor * weather["time_multiplier"] * time_factor, 1)
-        price, factors = estimate_price(route["distance_miles"], adjusted_eta, route_congestion, demand, weather_level, time_factor)
+        segments = create_segments(route, route_congestion, index)
+        bpr_minutes = sum(segment.adjusted_minutes for segment in segments) + 2
+        adjusted_eta_raw = bpr_minutes * weather["time_multiplier"] * time_factor
+        adjusted_eta = round(adjusted_eta_raw, 1)
+        price, factors = estimate_price(
+            route["distance_miles"], adjusted_eta_raw, route_congestion, demand,
+            weather["price_multiplier"], time_factor,
+        )
         option = RouteOption(
             id=route["id"], name=route["name"], color=route["color"],
             distance_miles=route["distance_miles"], base_eta_minutes=route["base_eta_minutes"],
             adjusted_eta_minutes=adjusted_eta, estimated_price=price,
             congestion_score=route_congestion, demand_score=demand,
-            points=route["points"], segments=create_segments(route, route_congestion, weather["time_multiplier"], index),
+            objective=route["objective"], normalized_score=0,
+            points=route["points"], segments=segments,
             factors=factors, data_source="Local reference model" if mode == "realtime" else "Simulated scenario",
         )
         routes.append(option.to_dict())
 
-    recommended = min(routes, key=lambda item: item["adjusted_eta_minutes"] + item["estimated_price"] * 0.32)
+    maxima = {
+        "time": max(item["adjusted_eta_minutes"] for item in routes),
+        "distance": max(item["distance_miles"] for item in routes),
+        "congestion": max(item["congestion_score"] for item in routes),
+    }
+    for item in routes:
+        item["normalized_score"] = round(
+            ROUTE_SCORE_WEIGHTS["time"] * item["adjusted_eta_minutes"] / maxima["time"]
+            + ROUTE_SCORE_WEIGHTS["distance"] * item["distance_miles"] / maxima["distance"]
+            + ROUTE_SCORE_WEIGHTS["congestion"] * item["congestion_score"] / maxima["congestion"]
+            - ROUTE_SCORE_WEIGHTS["demand"] * item["demand_score"] / 100,
+            4,
+        )
+    recommended = min(routes, key=lambda item: item["normalized_score"])
     return {
         "origin": origin_name, "destination": destination_name, "mode": mode,
         "weather": weather, "hour": hour, "congestion": congestion, "demand": demand,
@@ -53,4 +73,3 @@ def plan_route(payload):
         "heatmap": build_heatmap(congestion, demand, hour, heatmap_mode),
         "notice": "External traffic APIs are not configured; reference mode uses stable local baseline data." if mode == "realtime" else "Traffic, demand, weather, and prices are simulated planning estimates.",
     }
-

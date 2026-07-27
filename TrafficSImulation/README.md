@@ -1,43 +1,44 @@
-# TrafficScope
+# TrafficScope 1.1
 
-TrafficScope is a runnable Version 1.0 prototype of the Distributed Traffic Simulation and Rideshare Driver Planning App described in the project SRS. It compares local route alternatives using deterministic simulated traffic, demand, weather, road-segment statistics, heatmaps, adjusted ETAs, and illustrative upfront prices.
+TrafficScope is a responsive distributed-traffic simulation and rideshare planning prototype regenerated from SRS Revision 1.1. It provides three objective-based Austin route alternatives, BPR traffic adjustment, scenario controls, demand/traffic/profitability heatmaps, road-segment statistics, and a transparent illustrative planning estimate.
 
-## Run it
+## Run
 
-On Windows, double-click `start_demo.bat`. It opens <http://127.0.0.1:8000> and uses Python 3 when available. On a machine without Python, it automatically uses the included zero-dependency Node.js fallback.
+On Windows, double-click `start_demo.bat`, or run:
 
-Manual alternatives:
+```powershell
+npm install
+npm run build
+python main.py
+```
+
+Open <http://127.0.0.1:8000>. FastAPI also exposes interactive API documentation at <http://127.0.0.1:8000/docs>.
+
+For frontend development, run the API and Vite in separate terminals:
 
 ```powershell
 python main.py
-# or
-npm start
+npm run dev
 ```
 
-Stop the server with `Ctrl+C` in its terminal window.
+Vite opens on <http://127.0.0.1:5173> and proxies `/api` requests to FastAPI.
 
-## Use it
-
-1. Choose an origin and destination. Supported local places include Downtown Austin, UT Austin, Austin Airport, The Domain, Zilker Park, Mueller, South Congress, Round Rock, Cedar Park, East Austin, and Barton Springs.
-2. Select a route on the left or directly on the map.
-3. Switch the heatmap among Traffic, Demand, Earnings, and Off.
-4. Adjust time, weather, congestion, and customer demand. Results refresh automatically.
-5. Toggle Reference mode to compare against a stable local baseline. No external API key is required.
-
-## Test it
+## Test
 
 ```powershell
+python -m pytest
 npm test
-python -m unittest discover -s tests -p "test_*.py"
+npm run build
 ```
-
-The Python test command requires Python 3. The Node suite covers route validation, ETA and price modifiers, heatmaps, reference fallback behavior, and road segment generation.
 
 ## Architecture
 
-- `main.py` and `app/`: standard-library Python server plus separate routing, weather, simulation, heatmap, pricing, and model modules.
-- `static/`: responsive browser interface and SVG map.
-- `tools/dev-server.js` and `tools/simulation.js`: zero-dependency fallback runtime for machines without Python.
-- `tests/`: Python and Node tests.
+- `src/`: React + TypeScript responsive interface and reusable view components.
+- `main.py`: FastAPI controller, typed request validation, static production hosting, and OpenAPI documentation.
+- `app/map_service.py`: local geocoding, route geometry, and three documented route objectives.
+- `app/traffic_simulator.py`: BPR link timing, road capacity, flow, speed, and heatmap calculations.
+- `app/pricing_model.py`: reproducible route subtotal and multiplier breakdown.
+- `app/config.py`: centralized formula coefficients and scoring weights.
+- `tests/`: backend calculation, API, and frontend behavior tests.
 
-Version 1.0 intentionally uses a local Austin-area map model and simulated conditions. It does not call Google Maps, use private rideshare data, store location history, require accounts, or claim official fare accuracy.
+Reference mode uses a stable local baseline when external services are unavailable. All demand, traffic, weather, and fare-like values remain clearly labeled as simulated; no private rideshare data or official fare calculation is claimed.

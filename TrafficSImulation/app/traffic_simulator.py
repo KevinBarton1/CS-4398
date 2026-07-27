@@ -1,5 +1,6 @@
 import math
 
+from .config import BASE_LANE_CAPACITY, BPR_ALPHA, BPR_BETA, MINIMUM_CRAWL_SPEED_MPH
 from .models import RoadSegment
 
 
@@ -12,21 +13,36 @@ def time_of_day_factor(hour):
     return 1.0
 
 
-def create_segments(route, congestion, weather_multiplier, route_index):
+def bpr_adjusted_time(free_flow_minutes, flow, capacity):
+    """Bureau of Public Roads link-performance function."""
+    if capacity <= 0:
+        raise ValueError("Road capacity must be positive.")
+    return free_flow_minutes * (1 + BPR_ALPHA * (flow / capacity) ** BPR_BETA)
+
+
+def create_segments(route, congestion, route_index):
     segments = []
     lengths = (route["distance_miles"] * 0.47, route["distance_miles"] * 0.53)
     for index, (name, length) in enumerate(zip(route["road_names"], lengths)):
         local_congestion = max(5, min(98, congestion + (index * 11) - (route_index * 9)))
         speed_limit = (45, 55)[index]
-        average_speed = max(8, speed_limit * (1 - local_congestion * 0.0065) / weather_multiplier)
+        lanes = (3, 4)[index]
+        capacity = lanes * BASE_LANE_CAPACITY
+        flow = round(capacity * local_congestion / 100)
+        free_flow = length / speed_limit * 60
+        adjusted = bpr_adjusted_time(free_flow, flow, capacity)
+        average_speed = max(MINIMUM_CRAWL_SPEED_MPH, length / (adjusted / 60))
         segments.append(RoadSegment(
             name=name,
             length_miles=round(length, 1),
-            lanes=(3, 4)[index],
+            lanes=lanes,
             speed_limit_mph=speed_limit,
             average_speed_mph=round(average_speed, 1),
-            volume_vehicles_hour=round(550 + local_congestion * 21),
+            volume_vehicles_hour=flow,
             congestion=round(local_congestion / 100, 2),
+            capacity_vehicles_hour=capacity,
+            free_flow_minutes=round(free_flow, 4),
+            adjusted_minutes=round(adjusted, 4),
         ))
     return segments
 
@@ -45,4 +61,3 @@ def heatmap_grid(congestion, demand, hour, mode):
                 value = congestion * 0.66 + wave + center * 0.35
             cells.append({"row": row, "column": column, "value": round(max(3, min(100, value)))})
     return cells
-

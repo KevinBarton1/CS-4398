@@ -1,4 +1,8 @@
-WEATHER_LABELS = ["Clear", "Light rain", "Heavy rain", "Severe"]
+from .config import (
+    WEATHER_LABELS,
+    WEATHER_PRICE_MULTIPLIERS,
+    WEATHER_TIME_MULTIPLIERS,
+)
 
 
 def weather_adjustment(severity):
@@ -6,7 +10,7 @@ def weather_adjustment(severity):
     return {
         "severity": severity,
         "label": WEATHER_LABELS[severity],
-        "time_multiplier": [1.0, 1.08, 1.18, 1.32][severity],
+        "time_multiplier": WEATHER_TIME_MULTIPLIERS[severity],
+        "price_multiplier": WEATHER_PRICE_MULTIPLIERS[severity],
         "source": "Simulated fallback",
     }
-
