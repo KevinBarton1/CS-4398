@@ -54,7 +54,8 @@ function TrafficMap({ data, selected, heatmap, setHeatmap, onSelect }: {
   data: PlanResult | null; selected?: RouteOption; heatmap: HeatmapMode;
   setHeatmap: (v: HeatmapMode) => void; onSelect: (id: string) => void;
 }) {
-  const start = selected?.points[0], end = selected?.points.at(-1);
+  const start = selected?.points[0];
+  const end = selected?.points[selected.points.length - 1];
   return <section className="map-shell" aria-label="Interactive traffic simulation map">
     <div className="map-toolbar">
       <div className="tabs">{(["congestion", "demand", "profitability", "off"] as HeatmapMode[]).map(mode =>
