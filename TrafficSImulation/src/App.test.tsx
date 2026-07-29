@@ -23,18 +23,41 @@ const result = {
   }]
 };
 
+result.routes.push(
+  {
+    ...result.routes[0],
+    id: "route-2",
+    name: "Balanced",
+    color: "#ffb35c",
+    points: [{ x: 500, y: 330 }, { x: 650, y: 360 }, { x: 795, y: 495 }]
+  },
+  {
+    ...result.routes[0],
+    id: "route-3",
+    name: "Low traffic",
+    color: "#8aa8ff",
+    points: [{ x: 500, y: 330 }, { x: 590, y: 440 }, { x: 795, y: 495 }]
+  }
+);
+
 vi.stubGlobal("fetch", vi.fn(async () => ({
   ok: true,
   json: async () => result
 })));
 
 test("renders the required hierarchy and API results", async () => {
-  render(<App />);
+  const { container } = render(<App />);
   expect(screen.getByRole("heading", { name: "Find the better drive." })).toBeInTheDocument();
   expect(screen.getByLabelText("Starting point")).toBeInTheDocument();
   expect(screen.getByLabelText("Destination or zone")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Simulated" })).toBeInTheDocument();
-  await waitFor(() => expect(screen.getAllByText("$31.11")).toHaveLength(2));
+  await waitFor(() => expect(screen.getAllByText("$31.11")).toHaveLength(4));
   expect(screen.getByRole("heading", { name: "Fastest" })).toBeInTheDocument();
   expect(screen.getByText("Riverside Dr")).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "Three Google routes from point A to point B" })).toBeInTheDocument();
+  expect(container.querySelectorAll("[data-route-id]")).toHaveLength(3);
+  expect(screen.getByText("A")).toBeInTheDocument();
+  expect(screen.getByText("B")).toBeInTheDocument();
+  expect(container.querySelector(".roads")).not.toBeInTheDocument();
+  expect(container.querySelector(".water")).not.toBeInTheDocument();
 });

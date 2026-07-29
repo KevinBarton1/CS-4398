@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import type { HeatmapMode, Mode, PlanResult, RouteOption, Scenario } from "./types";
+import type { Mode, PlanResult, RouteOption, Scenario } from "./types";
 
 const defaults: Scenario = { hour: 17, weather: 1, congestion: 56, demand: 68 };
 const weatherLabels = ["Clear", "Light rain", "Heavy rain", "Severe"];
@@ -12,10 +12,6 @@ function path(points: RouteOption["points"]) {
   if (points.length === 3) return `M ${points[0].x} ${points[0].y} Q ${points[1].x} ${points[1].y} ${points[2].x} ${points[2].y}`;
   return points.map((p, i) => `${i ? "L" : "M"} ${p.x} ${p.y}`).join(" ");
 }
-function heatColor(value: number) {
-  return value < 45 ? "#36d1b7" : value < 72 ? "#f6c85f" : "#ff7668";
-}
-
 function RoutePlanner({ origin, destination, setOrigin, setDestination, loading, onSubmit, onLocation }: {
   origin: string; destination: string; setOrigin: (v: string) => void; setDestination: (v: string) => void;
   loading: boolean; onSubmit: (event: FormEvent) => void; onLocation: () => void;
@@ -50,35 +46,31 @@ function RouteOptions({ routes, selected, recommended, onSelect }: {
   </section>;
 }
 
-function TrafficMap({ data, selected, heatmap, setHeatmap, onSelect }: {
-  data: PlanResult | null; selected?: RouteOption; heatmap: HeatmapMode;
-  setHeatmap: (v: HeatmapMode) => void; onSelect: (id: string) => void;
+function TrafficMap({ data, selectedId, onSelect }: {
+  data: PlanResult | null; selectedId?: string; onSelect: (id: string) => void;
 }) {
-  const start = selected?.points[0];
-  const end = selected?.points[selected.points.length - 1];
-  return <section className="map-shell" aria-label="Interactive traffic simulation map">
-    <div className="map-toolbar">
-      <div className="tabs">{(["congestion", "demand", "profitability", "off"] as HeatmapMode[]).map(mode =>
-        <button key={mode} className={heatmap === mode ? "active" : ""} onClick={() => setHeatmap(mode)}>
-          {mode === "congestion" ? "Traffic" : mode === "profitability" ? "Earnings" : mode[0].toUpperCase() + mode.slice(1)}
-        </button>)}
-      </div><button className="map-action" aria-label="Reset map view">⌖</button>
-    </div>
-    <svg viewBox="0 0 1000 650" role="img" aria-label="Austin road network with candidate routes and heatmap">
-      <defs><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse" patternTransform="rotate(13)"><path d="M42 0H0V42" fill="none" stroke="#1a2b27" /></pattern>
-      <filter id="glow"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
-      <rect width="1000" height="650" fill="#0d1c18" /><rect width="1000" height="650" fill="url(#grid)" />
-      <path className="water" d="M-20 490C180 430 215 540 420 485S760 430 1030 520V690H-20Z" />
-      <g className="roads minor"><path d="M30 125L970 545M0 250L1000 180M45 575L920 80M178 0L285 650M760 0L645 650M0 390L1000 350M85 35L925 615M100 640L890 20" /></g>
-      <g className="roads major"><path d="M495-20C450 130 550 210 505 340S470 510 540 680M15 320C230 280 330 360 520 315S770 280 1010 335M290-20C350 120 335 235 380 345S385 525 410 680" /></g>
-      {data?.heatmap.cells.map(cell => <rect key={`${cell.row}-${cell.column}`} x={cell.column * 125} y={cell.row * 130} width="126" height="131" rx="18" fill={heatColor(cell.value)} opacity={0.05 + cell.value / 650}><title>{data.heatmap.mode}: {cell.value}/100</title></rect>)}
-      {data?.routes.slice().reverse().map(route => <path key={route.id} d={path(route.points)} onClick={() => onSelect(route.id)} className={`route-line ${route.id === selected?.id ? "selected" : ""}`} stroke={route.color} strokeWidth={route.id === selected?.id ? 9 : 7} />)}
-      {start && <g transform={`translate(${start.x} ${start.y})`}><circle r="11" fill="#55d6be" stroke="#e8fffa" strokeWidth="3" /><text x="17" y="4">{data?.origin}</text></g>}
-      {end && <g transform={`translate(${end.x} ${end.y})`}><path d="M0 15C-3 8-11 1-11-7a11 11 0 1122 0C11 1 3 8 0 15Z" fill="#ffb35c" stroke="#fff2df" strokeWidth="2" /><text x="17">{data?.destination}</text></g>}
-      <g className="labels"><text x="460" y="315">DOWNTOWN</text><text x="463" y="190">UT AUSTIN</text><text x="746" y="470">AIRPORT</text><text x="450" y="58">THE DOMAIN</text><text x="148" y="365">ZILKER</text></g>
+  const firstRoute = data?.routes[0];
+  const start = firstRoute?.points[0];
+  const end = firstRoute?.points[firstRoute.points.length - 1];
+  return <section className="map-shell" aria-label="Google route options">
+    <svg viewBox="0 0 1000 650" role="img" aria-label="Three Google routes from point A to point B">
+      <defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
+      {data?.routes.slice().reverse().map(route =>
+        <path
+          key={route.id}
+          d={path(route.points)}
+          onClick={() => onSelect(route.id)}
+          className={`route-line ${route.id === selectedId ? "selected" : ""}`}
+          stroke={route.color}
+          strokeWidth={route.id === selectedId ? 9 : 7}
+          data-route-id={route.id}
+        >
+          <title>{route.name}</title>
+        </path>
+      )}
+      {start && <g className="endpoint" transform={`translate(${start.x} ${start.y})`}><circle r="15" /><text textAnchor="middle" y="5">A</text></g>}
+      {end && <g className="endpoint destination" transform={`translate(${end.x} ${end.y})`}><circle r="15" /><text textAnchor="middle" y="5">B</text></g>}
     </svg>
-    {heatmap !== "off" && <div className="legend"><span>{heatmap} intensity</span><i /><small><span>Low</span><span>High</span></small></div>}
-    <div className="map-note">{data?.notice ?? "Enter two locations to compare routes."}</div>
   </section>;
 }
 
@@ -121,7 +113,6 @@ export function App() {
   const [origin, setOrigin] = useState("Downtown Austin");
   const [destination, setDestination] = useState("Austin Airport");
   const [mode, setMode] = useState<Mode>("simulated");
-  const [heatmap, setHeatmap] = useState<HeatmapMode>("congestion");
   const [scenario, setScenario] = useState(defaults);
   const [data, setData] = useState<PlanResult | null>(null);
   const [selectedId, setSelectedId] = useState<string>();
@@ -132,14 +123,14 @@ export function App() {
   const calculate = useCallback(async (keepSelection = true) => {
     setLoading(true); setMessage("");
     try {
-      const response = await fetch("/api/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ origin, destination, mode, heatmap, ...scenario }) });
+      const response = await fetch("/api/plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ origin, destination, mode, heatmap: "off", ...scenario }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || "Route calculation failed.");
       setData(result);
       setSelectedId(current => keepSelection && result.routes.some((r: RouteOption) => r.id === current) ? current : result.recommended_route_id);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to calculate routes."); }
     finally { setLoading(false); }
-  }, [origin, destination, mode, heatmap, scenario]);
+  }, [origin, destination, mode, scenario]);
 
   useEffect(() => { void calculate(false); }, []); // initial route
   useEffect(() => {
@@ -147,7 +138,7 @@ export function App() {
     window.clearTimeout(debounce.current);
     debounce.current = window.setTimeout(() => void calculate(), 180);
     return () => window.clearTimeout(debounce.current);
-  }, [mode, heatmap, scenario]);
+  }, [mode, scenario]);
 
   const selected = useMemo(() => data?.routes.find(route => route.id === selectedId) ?? data?.routes[0], [data, selectedId]);
   const submit = (event: FormEvent) => { event.preventDefault(); void calculate(false); };
@@ -161,7 +152,7 @@ export function App() {
     <main>
       <aside className="planner"><RoutePlanner {...{ origin, destination, setOrigin, setDestination, loading, onSubmit: submit, onLocation: locate }} />
         <RouteOptions routes={data?.routes ?? []} selected={selectedId} recommended={data?.recommended_route_id} onSelect={setSelectedId} /></aside>
-      <TrafficMap {...{ data, selected, heatmap, setHeatmap, onSelect: setSelectedId }} />
+      <TrafficMap data={data} selectedId={selectedId} onSelect={setSelectedId} />
       <Analysis route={selected} recommended={data?.recommended_route_id} scenario={scenario} setScenario={setScenario} reset={() => setScenario(defaults)} />
     </main>
     {message && <div className="toast" role="alert">{message}<button onClick={() => setMessage("")}>×</button></div>}
