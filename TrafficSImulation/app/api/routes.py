@@ -15,6 +15,34 @@ def _bounded(payload, name, default, low, high):
     return max(low, min(high, value))
 
 
+def _route_data_source(mode: str, map_source: str) -> str:
+    if map_source == "google":
+        return "Google Maps" if mode == "realtime" else "Google Maps route geometry"
+    return "Local reference model" if mode == "realtime" else "Simulated scenario"
+
+
+def _plan_notice(mode: str, map_source: str) -> str:
+    if map_source == "google" and mode == "realtime":
+        return "Route geometry and travel times from Google Maps with traffic-aware routing."
+    if map_source == "google":
+        return "Route geometry and distances from Google Maps; demand, weather, and prices remain simulated planning estimates."
+    if mode == "realtime":
+        return "External traffic APIs are not configured; reference mode uses stable local baseline data."
+    return "Traffic, demand, weather, and prices are simulated planning estimates."
+
+
+def _adjusted_eta_minutes(route, mode, weather, time_factor, bpr_minutes):
+    google_duration = route.get("google_duration_seconds")
+    google_static = route.get("google_static_duration_seconds")
+    if route.get("map_source") == "google" and mode == "realtime" and google_duration:
+        adjusted_eta_raw = (google_duration / 60) * weather["time_multiplier"] * time_factor
+    elif route.get("map_source") == "google" and google_static:
+        adjusted_eta_raw = (google_static / 60) * weather["time_multiplier"] * time_factor
+    else:
+        adjusted_eta_raw = bpr_minutes * weather["time_multiplier"] * time_factor
+    return round(adjusted_eta_raw, 1), adjusted_eta_raw
+
+
 def plan_route(payload):
     mode = "realtime" if payload.get("mode") == "realtime" else "simulated"
     hour = _bounded(payload, "hour", 17, 0, 23)
@@ -24,10 +52,16 @@ def plan_route(payload):
     heatmap_mode = payload.get("heatmap", "congestion")
 
     if mode == "realtime":
-        # Offline reference conditions keep the application useful without external keys.
+        # Reference mode uses traffic-aware Google routing when configured.
         congestion, demand, weather_level = 44, 52, 0
 
-    origin_name, destination_name, raw_routes = build_route_options(payload.get("origin"), payload.get("destination"))
+    origin_name, destination_name, raw_routes = build_route_options(
+        payload.get("origin"),
+        payload.get("destination"),
+        hour=hour,
+        use_traffic=mode == "realtime",
+    )
+    map_source = raw_routes[0].get("map_source", "local") if raw_routes else "local"
     weather = weather_adjustment(weather_level)
     time_factor = time_of_day_factor(hour)
     routes = []
@@ -35,8 +69,9 @@ def plan_route(payload):
         route_congestion = max(4, congestion - index * 9)
         segments = create_segments(route, route_congestion, index)
         bpr_minutes = sum(segment.adjusted_minutes for segment in segments) + 2
-        adjusted_eta_raw = bpr_minutes * weather["time_multiplier"] * time_factor
-        adjusted_eta = round(adjusted_eta_raw, 1)
+        adjusted_eta, adjusted_eta_raw = _adjusted_eta_minutes(
+            route, mode, weather, time_factor, bpr_minutes,
+        )
         price, factors = estimate_price(
             route["distance_miles"], adjusted_eta_raw, route_congestion, demand,
             weather["price_multiplier"], time_factor,
@@ -48,7 +83,7 @@ def plan_route(payload):
             congestion_score=route_congestion, demand_score=demand,
             objective=route["objective"], normalized_score=0,
             points=route["points"], segments=segments,
-            factors=factors, data_source="Local reference model" if mode == "realtime" else "Simulated scenario",
+            factors=factors, data_source=_route_data_source(mode, route.get("map_source", "local")),
         )
         routes.append(option.to_dict())
 
@@ -71,5 +106,5 @@ def plan_route(payload):
         "weather": weather, "hour": hour, "congestion": congestion, "demand": demand,
         "routes": routes, "recommended_route_id": recommended["id"],
         "heatmap": build_heatmap(congestion, demand, hour, heatmap_mode),
-        "notice": "External traffic APIs are not configured; reference mode uses stable local baseline data." if mode == "realtime" else "Traffic, demand, weather, and prices are simulated planning estimates.",
+        "notice": _plan_notice(mode, map_source),
     }
