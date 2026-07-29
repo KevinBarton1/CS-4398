@@ -54,6 +54,6 @@ AUSTIN_LOCATION_BIAS = {
 GOOGLE_ROUTES_FIELD_MASK = (
     "routes.duration,routes.staticDuration,routes.distanceMeters,"
     "routes.polyline.encodedPolyline,routes.legs.steps.distanceMeters,"
-    "routes.legs.steps.staticDuration,routes.legs.steps.duration,"
-    "routes.legs.steps.navigationInstruction,routes.description,routes.routeLabels"
+    "routes.legs.steps.staticDuration,routes.legs.steps.navigationInstruction,"
+    "routes.description,routes.routeLabels"
 )

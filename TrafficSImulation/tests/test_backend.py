@@ -1,7 +1,9 @@
+import httpx
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from app.api.routes import plan_route
+from app.map.google_errors import format_google_api_error
 from app.map.google_places import resolve_place
 from app.map.google_routes import compute_route_options
 from app.map.polyline import decode_polyline
@@ -129,6 +131,77 @@ class GoogleIntegrationTests(unittest.TestCase):
         self.assertEqual("google", routes[0]["map_source"])
         self.assertGreater(routes[0]["distance_miles"], 0)
         self.assertEqual("Congress Ave", routes[0]["road_names"][0])
+
+    def test_google_api_error_includes_field_violations(self):
+        response = MagicMock()
+        response.json.return_value = {
+            "error": {
+                "code": 400,
+                "message": "Request contains an invalid argument.",
+                "status": "INVALID_ARGUMENT",
+                "details": [{
+                    "@type": "type.googleapis.com/google.rpc.BadRequest",
+                    "fieldViolations": [{
+                        "field": "departure_time",
+                        "description": "departure_time is not supported for TRAFFIC_UNAWARE.",
+                    }],
+                }],
+            },
+        }
+        detail = format_google_api_error(response)
+        self.assertIn("Request contains an invalid argument.", detail)
+        self.assertIn("departure_time: departure_time is not supported for TRAFFIC_UNAWARE.", detail)
+
+    def test_routes_error_surfaces_field_violations(self):
+        origin = ResolvedPlace("Downtown Austin", 30.27, -97.74, project_lat_lng(30.27, -97.74), "google")
+        destination = ResolvedPlace("Austin Airport", 30.20, -97.67, project_lat_lng(30.20, -97.67), "google")
+        error_response = MagicMock()
+        error_response.status_code = 400
+        error_response.json.return_value = {
+            "error": {
+                "message": "Request contains an invalid argument.",
+                "details": [{
+                    "@type": "type.googleapis.com/google.rpc.BadRequest",
+                    "fieldViolations": [{
+                        "field": "compute_alternative_routes",
+                        "description": "Alternative routes are unavailable for this request.",
+                    }],
+                }],
+            },
+        }
+        http_error = httpx.HTTPStatusError(
+            "bad request",
+            request=MagicMock(),
+            response=error_response,
+        )
+
+        with patch("app.map.google_routes.GOOGLE_MAPS_API_KEY", "test-key"):
+            with patch("httpx.post") as post_mock:
+                post_mock.return_value.raise_for_status.side_effect = http_error
+                with self.assertRaisesRegex(
+                    ValueError,
+                    r"compute_alternative_routes: Alternative routes are unavailable for this request\.",
+                ):
+                    compute_route_options(origin, destination)
+
+    def test_routes_payload_omits_departure_time_when_traffic_unaware(self):
+        origin = ResolvedPlace("Downtown Austin", 30.27, -97.74, project_lat_lng(30.27, -97.74), "google")
+        destination = ResolvedPlace("Austin Airport", 30.20, -97.67, project_lat_lng(30.20, -97.67), "google")
+        mock_response = {"routes": [{"distanceMeters": 16093, "staticDuration": "1200s", "polyline": {"encodedPolyline": ""}, "legs": [{"steps": []}]}]}
+
+        with patch("app.map.google_routes.GOOGLE_MAPS_API_KEY", "test-key"):
+            with patch("httpx.post") as post_mock:
+                post_mock.return_value.raise_for_status = lambda: None
+                post_mock.return_value.json.return_value = mock_response
+                compute_route_options(origin, destination, use_traffic=False)
+                payload = post_mock.call_args.kwargs["json"]
+                self.assertEqual("TRAFFIC_UNAWARE", payload["routingPreference"])
+                self.assertNotIn("departureTime", payload)
+
+                compute_route_options(origin, destination, use_traffic=True)
+                traffic_payload = post_mock.call_args.kwargs["json"]
+                self.assertEqual("TRAFFIC_AWARE", traffic_payload["routingPreference"])
+                self.assertIn("departureTime", traffic_payload)
 
     def test_polyline_decoder_returns_coordinates(self):
         decoded = decode_polyline("_p~iF~ps|U_ulLnnqC_mqNvxq`@")

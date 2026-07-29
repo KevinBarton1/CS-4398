@@ -11,6 +11,7 @@ from app.config import (
     GOOGLE_ROUTES_FIELD_MASK,
     ROUTE_COLORS,
 )
+from app.map.google_errors import format_google_api_error
 from app.map.polyline import decode_polyline
 from app.map.projection import project_lat_lng, simplify_polyline
 from app.map.types import ResolvedPlace
@@ -144,10 +145,12 @@ def compute_route_options(
         "travelMode": "DRIVE",
         "computeAlternativeRoutes": True,
         "routingPreference": "TRAFFIC_AWARE" if use_traffic else "TRAFFIC_UNAWARE",
-        "departureTime": departure.isoformat().replace("+00:00", "Z"),
         "units": "IMPERIAL",
         "regionCode": GOOGLE_REGION_CODE,
     }
+    # departureTime is only valid with traffic-aware routing preferences.
+    if use_traffic:
+        payload["departureTime"] = departure.isoformat().replace("+00:00", "Z")
 
     try:
         response = httpx.post(
@@ -158,7 +161,7 @@ def compute_route_options(
         )
         response.raise_for_status()
     except httpx.HTTPStatusError as error:
-        detail = error.response.text.strip().replace("\n", " ")[:240]
+        detail = format_google_api_error(error.response)
         raise ValueError(f"Routes API HTTP {error.response.status_code}: {detail}") from error
     except httpx.HTTPError as error:
         raise ValueError(f"Routes API request failed: {error}") from error
