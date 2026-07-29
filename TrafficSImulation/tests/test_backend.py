@@ -1,7 +1,7 @@
 import unittest
 
-from app.routes import plan_route
-from app.traffic_simulator import bpr_adjusted_time
+from app.api.routes import plan_route
+from app.simulation.traffic import bpr_adjusted_time
 
 
 class RoutePlanningTests(unittest.TestCase):

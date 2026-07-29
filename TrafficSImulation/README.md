@@ -35,10 +35,13 @@ npm run build
 
 - `src/`: React + TypeScript responsive interface and reusable view components.
 - `main.py`: FastAPI controller, typed request validation, static production hosting, and OpenAPI documentation.
-- `app/map_service.py`: local geocoding, route geometry, and three documented route objectives.
-- `app/traffic_simulator.py`: BPR link timing, road capacity, flow, speed, and heatmap calculations.
-- `app/pricing_model.py`: reproducible route subtotal and multiplier breakdown.
-- `app/config.py`: centralized formula coefficients and scoring weights.
+- `app/api/`: request/response models (`models.py`) and route-planning orchestration (`routes.py`).
+- `app/map/`: local geocoding, route geometry, and three documented route objectives.
+- `app/heatmap/`: heatmap overlay builder and grid calculations.
+- `app/simulation/`: BPR link timing, road capacity, flow, and speed.
+- `app/pricing/`: reproducible route subtotal and multiplier breakdown.
+- `app/weather/`: weather severity multipliers.
+- `app/config/`: centralized formula coefficients and scoring weights.
 - `tests/`: backend calculation, API, and frontend behavior tests.
 
 Reference mode uses a stable local baseline when external services are unavailable. All demand, traffic, weather, and fare-like values remain clearly labeled as simulated; no private rideshare data or official fare calculation is claimed.

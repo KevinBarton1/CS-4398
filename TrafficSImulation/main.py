@@ -6,8 +6,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.models import PlanRequest
-from app.routes import plan_route
+from app.api.models import PlanRequest
+from app.api.routes import plan_route
 
 
 ROOT = Path(__file__).resolve().parent

@@ -20,4 +20,3 @@ ROUTE_SCORE_WEIGHTS = {
     "congestion": 0.25,
     "demand": 0.15,
 }
-

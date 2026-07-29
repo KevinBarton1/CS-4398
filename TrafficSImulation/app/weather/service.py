@@ -1,4 +1,4 @@
-from .config import (
+from app.config import (
     WEATHER_LABELS,
     WEATHER_PRICE_MULTIPLIERS,
     WEATHER_TIME_MULTIPLIERS,

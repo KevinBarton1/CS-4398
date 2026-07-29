@@ -1,7 +1,7 @@
 import math
 from difflib import get_close_matches
 
-from .models import Point
+from app.api.models import Point
 
 
 PLACES = {

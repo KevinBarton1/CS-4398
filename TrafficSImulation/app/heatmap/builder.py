@@ -1,4 +1,4 @@
-from .traffic_simulator import heatmap_grid
+from app.heatmap.grid import heatmap_grid
 
 
 def build_heatmap(congestion, demand, hour, mode):
@@ -6,4 +6,3 @@ def build_heatmap(congestion, demand, hour, mode):
     if mode not in allowed:
         mode = "congestion"
     return {"mode": mode, "cells": [] if mode == "off" else heatmap_grid(congestion, demand, hour, mode)}
-

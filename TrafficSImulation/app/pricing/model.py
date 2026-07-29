@@ -1,4 +1,4 @@
-from .config import BASE_FARE, MINIMUM_FARE, PER_MILE_RATE, PER_MINUTE_RATE
+from app.config import BASE_FARE, MINIMUM_FARE, PER_MILE_RATE, PER_MINUTE_RATE
 
 
 def estimate_price(distance_miles, minutes, congestion, demand, weather_multiplier, time_factor):

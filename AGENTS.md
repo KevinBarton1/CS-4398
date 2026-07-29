@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-The application lives in `TrafficSImulation/`. Its React 19 + TypeScript interface is in `TrafficSImulation/src/`: `App.tsx` composes the UI, `types.ts` defines shared frontend shapes, and `styles.css` holds the presentation layer. The FastAPI service starts at `TrafficSImulation/main.py`; domain logic belongs in `TrafficSImulation/app/` (`models.py`, `routes.py`, simulation, mapping, pricing, and configuration modules). Tests are split between Python files in `TrafficSImulation/tests/` and colocated Vitest files such as `TrafficSImulation/src/App.test.tsx`.
+The application lives in `TrafficSImulation/`. Its React 19 + TypeScript interface is in `TrafficSImulation/src/`: `App.tsx` composes the UI, `types.ts` defines shared frontend shapes, and `styles.css` holds the presentation layer. The FastAPI service starts at `TrafficSImulation/main.py`; domain logic belongs in `TrafficSImulation/app/` organized by component: `api/` (models and orchestration), `map/`, `heatmap/`, `simulation/`, `pricing/`, `weather/`, and `config/`. Tests are split between Python files in `TrafficSImulation/tests/` and colocated Vitest files such as `TrafficSImulation/src/App.test.tsx`.
 
 ## Build, Test, and Development Commands
 
@@ -19,7 +19,7 @@ For local development, run `python main.py` and `npm run dev` in separate termin
 
 ## Coding Style & Naming Conventions
 
-Match the existing code: use four spaces in Python and two spaces in TypeScript/TSX. Keep Python modules and functions in `snake_case`; use `PascalCase` for React components and TypeScript types, and `camelCase` for variables and callbacks. Preserve strict TypeScript typing; define API request and response shapes in the appropriate model/type module rather than passing untyped objects. Keep simulation coefficients centralized in `app/config.py`.
+Match the existing code: use four spaces in Python and two spaces in TypeScript/TSX. Keep Python modules and functions in `snake_case`; use `PascalCase` for React components and TypeScript types, and `camelCase` for variables and callbacks. Preserve strict TypeScript typing; define API request and response shapes in the appropriate model/type module rather than passing untyped objects. Keep simulation coefficients centralized in `app/config/`.
 
 ## Testing Guidelines
 
