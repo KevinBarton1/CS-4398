@@ -38,6 +38,11 @@ def _parse_duration_seconds(value) -> float | None:
     return None
 
 
+def _require_api_key() -> None:
+    if not GOOGLE_MAPS_API_KEY:
+        raise ValueError("GOOGLE_MAPS_API_KEY is not configured.")
+
+
 def _routes_headers() -> dict[str, str]:
     return {
         "Content-Type": "application/json",
@@ -47,16 +52,14 @@ def _routes_headers() -> dict[str, str]:
 
 
 def _waypoint(place: ResolvedPlace) -> dict:
-    if place.source == "google":
-        return {
-            "location": {
-                "latLng": {
-                    "latitude": place.latitude,
-                    "longitude": place.longitude,
-                }
+    return {
+        "location": {
+            "latLng": {
+                "latitude": place.latitude,
+                "longitude": place.longitude,
             }
         }
-    return {"address": place.name}
+    }
 
 
 def _extract_road_names(steps: list[dict]) -> list[str]:
@@ -123,9 +126,8 @@ def compute_route_options(
     destination: ResolvedPlace,
     hour: int = 17,
     use_traffic: bool = False,
-) -> list[dict] | None:
-    if not GOOGLE_MAPS_API_KEY:
-        return None
+) -> list[dict]:
+    _require_api_key()
 
     departure = datetime.now(timezone.utc).replace(
         hour=max(0, min(23, int(hour))),
@@ -155,12 +157,17 @@ def compute_route_options(
             timeout=10.0,
         )
         response.raise_for_status()
-        routes = response.json().get("routes") or []
-        if not routes:
-            return None
-        return [
-            _build_route_option(index, route, origin, destination)
-            for index, route in enumerate(routes[:3])
-        ]
-    except (httpx.HTTPError, ValueError, TypeError, KeyError):
-        return None
+    except httpx.HTTPStatusError as error:
+        detail = error.response.text.strip().replace("\n", " ")[:240]
+        raise ValueError(f"Routes API HTTP {error.response.status_code}: {detail}") from error
+    except httpx.HTTPError as error:
+        raise ValueError(f"Routes API request failed: {error}") from error
+
+    routes = response.json().get("routes") or []
+    if not routes:
+        raise ValueError("Google Routes returned no route alternatives for this trip.")
+
+    return [
+        _build_route_option(index, route, origin, destination)
+        for index, route in enumerate(routes[:3])
+    ]

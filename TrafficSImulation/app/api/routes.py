@@ -15,20 +15,14 @@ def _bounded(payload, name, default, low, high):
     return max(low, min(high, value))
 
 
-def _route_data_source(mode: str, map_source: str) -> str:
-    if map_source == "google":
-        return "Google Maps" if mode == "realtime" else "Google Maps route geometry"
-    return "Local reference model" if mode == "realtime" else "Simulated scenario"
+def _route_data_source(mode: str) -> str:
+    return "Google Maps" if mode == "realtime" else "Google Maps route geometry"
 
 
-def _plan_notice(mode: str, map_source: str) -> str:
-    if map_source == "google" and mode == "realtime":
-        return "Route geometry and travel times from Google Maps with traffic-aware routing."
-    if map_source == "google":
-        return "Route geometry and distances from Google Maps; demand, weather, and prices remain simulated planning estimates."
+def _plan_notice(mode: str) -> str:
     if mode == "realtime":
-        return "External traffic APIs are not configured; reference mode uses stable local baseline data."
-    return "Traffic, demand, weather, and prices are simulated planning estimates."
+        return "Route geometry and travel times from Google Maps with traffic-aware routing."
+    return "Route geometry and distances from Google Maps; demand, weather, and prices remain simulated planning estimates."
 
 
 def _adjusted_eta_minutes(route, mode, weather, time_factor, bpr_minutes):
@@ -61,7 +55,6 @@ def plan_route(payload):
         hour=hour,
         use_traffic=mode == "realtime",
     )
-    map_source = raw_routes[0].get("map_source", "local") if raw_routes else "local"
     weather = weather_adjustment(weather_level)
     time_factor = time_of_day_factor(hour)
     routes = []
@@ -83,7 +76,7 @@ def plan_route(payload):
             congestion_score=route_congestion, demand_score=demand,
             objective=route["objective"], normalized_score=0,
             points=route["points"], segments=segments,
-            factors=factors, data_source=_route_data_source(mode, route.get("map_source", "local")),
+            factors=factors, data_source=_route_data_source(mode),
         )
         routes.append(option.to_dict())
 
@@ -106,5 +99,5 @@ def plan_route(payload):
         "weather": weather, "hour": hour, "congestion": congestion, "demand": demand,
         "routes": routes, "recommended_route_id": recommended["id"],
         "heatmap": build_heatmap(congestion, demand, hour, heatmap_mode),
-        "notice": _plan_notice(mode, map_source),
+        "notice": _plan_notice(mode),
     }

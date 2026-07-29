@@ -62,9 +62,23 @@ GOOGLE_MAPS_API_KEY=your-api-key
 
 Then start the app with `python main.py` or `start_demo.bat`. The key is loaded automatically from `.env` (which is gitignored). You can still override it with a shell variable if needed.
 
-When the key is missing or a request fails, the app automatically falls back to the built-in Austin geocoder and synthetic routes.
+When the key is missing or Google returns an error, route planning fails with HTTP 400 and a descriptive error message.
 
 Enable these APIs in Google Cloud Console:
 
 - Places API (New) — `places:searchText`
 - Routes API — `directions/v2:computeRoutes`
+
+On server startup, TrafficScope probes both APIs when a key is configured and prints the result to the console. You can also check:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/health
+```
+
+Look at the `google_maps` object — `ok: true` means both Places and Routes responded successfully.
+
+To run the live Google probe as a test (requires a configured key):
+
+```powershell
+python -m pytest tests/test_google_startup.py -v
+```
