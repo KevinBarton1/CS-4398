@@ -1,4 +1,96 @@
+from collections.abc import Callable
+
+import httpx
+
 from app.map.types import ResolvedPlace
+
+ENCODED_POLYLINE = "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
+
+PLACES_SUCCESS_PAYLOAD = {
+    "places": [
+        {
+            "displayName": {"text": "Downtown Austin"},
+            "formattedAddress": "Downtown Austin, Austin, TX, USA",
+            "location": {
+                "latitude": 30.2672,
+                "longitude": -97.7431,
+            },
+        }
+    ]
+}
+
+ROUTES_SUCCESS_PAYLOAD = {
+    "routes": [
+        {
+            "duration": "720s",
+            "staticDuration": "600s",
+            "distanceMeters": 11265,
+            "polyline": {"encodedPolyline": ENCODED_POLYLINE},
+            "travelAdvisory": {
+                "speedReadingIntervals": [
+                    {
+                        "startPolylinePointIndex": 0,
+                        "endPolylinePointIndex": 2,
+                        "speed": "TRAFFIC_JAM",
+                    }
+                ]
+            },
+            "legs": [
+                {
+                    "travelAdvisory": {
+                        "speedReadingIntervals": [
+                            {
+                                "startPolylinePointIndex": 0,
+                                "endPolylinePointIndex": 1,
+                                "speed": "NORMAL",
+                            },
+                            {
+                                "startPolylinePointIndex": 1,
+                                "endPolylinePointIndex": 2,
+                                "speed": "UNRECOGNIZED",
+                            },
+                            {
+                                "startPolylinePointIndex": 2,
+                                "speed": "SLOW",
+                            },
+                        ]
+                    },
+                    "steps": [
+                        {
+                            "distanceMeters": 8046,
+                            "duration": "480s",
+                            "staticDuration": "420s",
+                            "polyline": {
+                                "encodedPolyline": ENCODED_POLYLINE
+                            },
+                            "navigationInstruction": {
+                                "instructions": "Head south on Congress Ave"
+                            },
+                        }
+                    ],
+                }
+            ],
+        }
+    ]
+}
+
+
+def make_mock_async_client(
+    handler: Callable[[httpx.Request], httpx.Response],
+) -> httpx.AsyncClient:
+    return httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+
+def mock_json_response(
+    request: httpx.Request,
+    payload: object,
+    status_code: int = 200,
+) -> httpx.Response:
+    return httpx.Response(
+        status_code=status_code,
+        json=payload,
+        request=request,
+    )
 
 
 def _mock_polyline(offset: float = 0.0) -> list[dict[str, float]]:
