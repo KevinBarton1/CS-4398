@@ -133,7 +133,7 @@ def compute_route_options(
         "origin": _waypoint(origin),
         "destination": _waypoint(destination),
         "travelMode": "DRIVE",
-        "computeAlternativeRoutes": True,
+        "computeAlternativeRoutes": not use_traffic,
         "routingPreference": "TRAFFIC_AWARE" if use_traffic else "TRAFFIC_UNAWARE",
         "units": "IMPERIAL",
         "regionCode": GOOGLE_REGION_CODE,
@@ -160,7 +160,8 @@ def compute_route_options(
     if not routes:
         raise ValueError("Google Routes returned no route alternatives for this trip.")
 
+    limit = 1 if use_traffic else 3
     return [
         _build_route_option(index, route)
-        for index, route in enumerate(routes[:3])
+        for index, route in enumerate(routes[:limit])
     ]

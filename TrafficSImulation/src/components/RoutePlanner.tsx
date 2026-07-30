@@ -50,7 +50,7 @@ export function RoutePlanner({
         </div>
         <small>Try: The Domain, UT Austin, Zilker Park, Mueller, South Congress</small>
         <button className="primary" disabled={loading}>
-          <span>{loading ? "Calculating…" : "Plan routes"}</span>
+          <span>{loading ? "Calculating…" : "Plan Route(s)"}</span>
           <span>→</span>
         </button>
       </form>

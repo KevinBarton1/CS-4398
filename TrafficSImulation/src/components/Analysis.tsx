@@ -1,19 +1,21 @@
 import { weatherLabels } from "../constants/scenario";
-import type { RouteOption, Scenario } from "../types";
+import type { Mode, RouteOption, Scenario } from "../types";
 import { hourLabel } from "../utils/format";
 
 interface AnalysisProps {
   route?: RouteOption;
   recommended?: string;
+  mode: Mode;
   scenario: Scenario;
   setScenario: (value: Scenario) => void;
   onReset: () => void;
 }
 
-export function Analysis({ route, recommended, scenario, setScenario, onReset }: AnalysisProps) {
+export function Analysis({ route, recommended, mode, scenario, setScenario, onReset }: AnalysisProps) {
   if (!route) return <aside className="analysis skeleton" />;
 
   const factors = route.factors;
+  const scenarioDisabled = mode === "realtime";
 
   const control = (
     key: keyof Scenario,
@@ -32,7 +34,11 @@ export function Analysis({ route, recommended, scenario, setScenario, onReset }:
         min={min}
         max={max}
         value={scenario[key]}
-        onChange={(e) => setScenario({ ...scenario, [key]: Number(e.target.value) })}
+        disabled={scenarioDisabled}
+        onChange={(e) => {
+          if (scenarioDisabled) return;
+          setScenario({ ...scenario, [key]: Number(e.target.value) });
+        }}
       />
     </label>
   );
@@ -46,7 +52,7 @@ export function Analysis({ route, recommended, scenario, setScenario, onReset }:
             <h2>{route.name}</h2>
           </div>
           <span className="source">
-            {route.data_source.toLowerCase().includes("reference") ? "Reference" : "Simulated"}
+            {mode === "realtime" ? "Real-Time" : "Simulated"}
           </span>
         </div>
         {route.id === recommended && <span className="recommend-line">Recommended route</span>}
@@ -90,14 +96,19 @@ export function Analysis({ route, recommended, scenario, setScenario, onReset }:
         <p>Illustrative estimate only. Not an official Uber or Lyft fare.</p>
       </section>
 
-      <section className="card scenario">
+      <section className={`card scenario${scenarioDisabled ? " panel-disabled" : ""}`}>
         <div className="heading">
           <div>
             <span className="eyebrow">Scenario lab</span>
             <h2>Shape conditions</h2>
           </div>
-          <button onClick={onReset}>Reset</button>
+          <button type="button" onClick={onReset} disabled={scenarioDisabled}>
+            Reset
+          </button>
         </div>
+        {scenarioDisabled && (
+          <p className="panel-disabled-note">Scenario controls are available in Simulated mode.</p>
+        )}
         {control("hour", "Time of day", 0, 23, hourLabel(scenario.hour))}
         {control("weather", "Weather", 0, 3, weatherLabels[scenario.weather])}
         {control("congestion", "Congestion", 0, 100, `${scenario.congestion}%`)}

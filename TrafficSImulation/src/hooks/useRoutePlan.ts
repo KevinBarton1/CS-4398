@@ -46,7 +46,14 @@ export function useRoutePlan() {
     window.clearTimeout(debounce.current);
     debounce.current = window.setTimeout(() => void calculate(), 180);
     return () => window.clearTimeout(debounce.current);
-  }, [mode, scenario]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!data || mode === "realtime") return;
+    window.clearTimeout(debounce.current);
+    debounce.current = window.setTimeout(() => void calculate(), 180);
+    return () => window.clearTimeout(debounce.current);
+  }, [scenario]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedRoute = useMemo(
     () => data?.routes.find((route) => route.id === selectedId) ?? data?.routes[0],

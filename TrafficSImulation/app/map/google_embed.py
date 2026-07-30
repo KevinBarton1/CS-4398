@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 from app.config import GOOGLE_MAPS_API_KEY
 
 EMBED_BASE_URL = "https://www.google.com/maps/embed/v1/view"
+DIRECTIONS_BASE_URL = "https://www.google.com/maps/embed/v1/directions"
 
 
 def compute_map_view(
@@ -68,3 +69,15 @@ def build_map_embed_url(center_lat: float, center_lng: float, zoom: int = 12) ->
         "maptype": "roadmap",
     })
     return f"{EMBED_BASE_URL}?{params}"
+
+
+def build_directions_embed_url(origin: str, destination: str) -> str | None:
+    if not GOOGLE_MAPS_API_KEY:
+        return None
+    params = urlencode({
+        "key": GOOGLE_MAPS_API_KEY,
+        "origin": origin,
+        "destination": destination,
+        "mode": "driving",
+    })
+    return f"{DIRECTIONS_BASE_URL}?{params}"

@@ -46,6 +46,7 @@ export function App() {
             routes={data?.routes ?? []}
             selected={selectedId}
             recommended={data?.recommended_route_id}
+            mode={mode}
             onSelect={setSelectedId}
           />
         </aside>
@@ -53,6 +54,7 @@ export function App() {
         <Analysis
           route={selectedRoute}
           recommended={data?.recommended_route_id}
+          mode={mode}
           scenario={scenario}
           setScenario={setScenario}
           onReset={resetScenario}

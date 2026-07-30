@@ -22,7 +22,7 @@ export function Header({ mode, onModeChange, loading }: HeaderProps) {
             onClick={() => onModeChange(value)}
             className={mode === value ? "active" : ""}
           >
-            {value === "realtime" ? "Reference" : "Simulated"}
+            {value === "realtime" ? "Real-Time" : "Simulated"}
           </button>
         ))}
       </div>

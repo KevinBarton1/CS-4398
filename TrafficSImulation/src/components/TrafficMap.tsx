@@ -29,6 +29,9 @@ export function TrafficMap({ data, routes = [], selectedId }: TrafficMapProps) {
   const [mapView, setMapView] = useState<MapView | undefined>(data?.map_view);
   const [viewAll, setViewAll] = useState(false);
 
+  const isRealtime = data?.mode === "realtime";
+  const directionsUrl = data?.directions_embed_url ?? null;
+
   const selectedRoute = useMemo(
     () => routes.find((route) => route.id === selectedId) ?? routes[0],
     [routes, selectedId]
@@ -39,7 +42,7 @@ export function TrafficMap({ data, routes = [], selectedId }: TrafficMapProps) {
   }, [selectedId]);
 
   const computedView = useMemo(() => {
-    if (size.width === 0 || size.height === 0) return undefined;
+    if (isRealtime || size.width === 0 || size.height === 0) return undefined;
 
     if (viewAll) {
       const polylines = routes.map((route) => route.polyline).filter((line) => line.length > 1);
@@ -48,7 +51,7 @@ export function TrafficMap({ data, routes = [], selectedId }: TrafficMapProps) {
 
     if (!selectedRoute?.polyline.length) return undefined;
     return computeMapViewForPolyline(selectedRoute.polyline, size.width, size.height) ?? undefined;
-  }, [viewAll, selectedRoute, routes, size]);
+  }, [isRealtime, viewAll, selectedRoute, routes, size]);
 
   useEffect(() => {
     const node = shellRef.current;
@@ -63,7 +66,7 @@ export function TrafficMap({ data, routes = [], selectedId }: TrafficMapProps) {
   }, []);
 
   useEffect(() => {
-    if (!computedView) return;
+    if (isRealtime || !computedView) return;
 
     let cancelled = false;
     setMapView(computedView);
@@ -79,7 +82,25 @@ export function TrafficMap({ data, routes = [], selectedId }: TrafficMapProps) {
     return () => {
       cancelled = true;
     };
-  }, [computedView]);
+  }, [computedView, isRealtime]);
+
+  if (isRealtime && directionsUrl) {
+    return (
+      <section
+        ref={shellRef}
+        className="map-shell realtime"
+        aria-label="Google Maps real-time directions"
+      >
+        <iframe
+          key={directionsUrl}
+          title={`Real-time directions from ${data?.origin ?? "origin"} to ${data?.destination ?? "destination"}`}
+          src={directionsUrl}
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+        />
+      </section>
+    );
+  }
 
   const showMap = embedUrl && mapView;
 

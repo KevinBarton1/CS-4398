@@ -1,6 +1,10 @@
 from app.api.models import RouteOption
 from app.config import ROUTE_SCORE_WEIGHTS
-from app.map.google_embed import build_map_embed_url, compute_map_view_for_polyline
+from app.map.google_embed import (
+    build_directions_embed_url,
+    build_map_embed_url,
+    compute_map_view_for_polyline,
+)
 from app.map.service import build_route_options
 from app.pricing.model import estimate_price
 from app.simulation.traffic import create_segments, time_of_day_factor
@@ -21,7 +25,7 @@ def _route_data_source(mode: str) -> str:
 
 def _plan_notice(mode: str) -> str:
     if mode == "realtime":
-        return "Route geometry and travel times from Google Maps with traffic-aware routing."
+        return "Real-Time mode: route, distance, and travel time from Google Maps with traffic-aware routing."
     return "Route geometry and distances from Google Maps; demand, weather, and prices remain simulated planning estimates."
 
 
@@ -102,7 +106,7 @@ def plan_route(payload):
             4,
         )
     recommended = min(routes, key=lambda item: item["normalized_score"])
-    return {
+    response = {
         "origin": origin_name, "destination": destination_name, "mode": mode,
         "weather": weather, "hour": hour, "congestion": congestion, "demand": demand,
         "routes": routes, "recommended_route_id": recommended["id"],
@@ -110,3 +114,6 @@ def plan_route(payload):
         "map_embed_url": recommended["map_embed_url"],
         "map_view": recommended["map_view"],
     }
+    if mode == "realtime":
+        response["directions_embed_url"] = build_directions_embed_url(origin_name, destination_name)
+    return response

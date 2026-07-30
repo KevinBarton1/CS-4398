@@ -24,6 +24,7 @@ export interface PlanResult {
   demand: number; routes: RouteOption[]; recommended_route_id: string; notice: string;
   map_embed_url: string | null;
   map_view?: MapView;
+  directions_embed_url?: string | null;
   weather: { label: string; severity: number; time_multiplier: number; price_multiplier: number };
 }
 export interface Scenario { hour: number; weather: number; congestion: number; demand: number }
