@@ -49,7 +49,7 @@ export function App() {
             onSelect={setSelectedId}
           />
         </aside>
-        <TrafficMap data={data} selectedId={selectedId} onSelect={setSelectedId} />
+        <TrafficMap data={data} />
         <Analysis
           route={selectedRoute}
           recommended={data?.recommended_route_id}

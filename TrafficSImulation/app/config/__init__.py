@@ -36,14 +36,6 @@ GOOGLE_PLACES_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
 GOOGLE_ROUTES_COMPUTE_URL = "https://routes.googleapis.com/directions/v2:computeRoutes"
 GOOGLE_REGION_CODE = "US"
 
-SVG_WIDTH = 1000
-SVG_HEIGHT = 650
-AUSTIN_BOUNDS = {
-    "lat_min": 30.05,
-    "lat_max": 30.55,
-    "lng_min": -97.95,
-    "lng_max": -97.55,
-}
 AUSTIN_LOCATION_BIAS = {
     "circle": {
         "center": {"latitude": 30.2672, "longitude": -97.7431},
@@ -53,7 +45,6 @@ AUSTIN_LOCATION_BIAS = {
 
 GOOGLE_ROUTES_FIELD_MASK = (
     "routes.duration,routes.staticDuration,routes.distanceMeters,"
-    "routes.polyline.encodedPolyline,routes.legs.steps.distanceMeters,"
-    "routes.legs.steps.staticDuration,routes.legs.steps.navigationInstruction,"
-    "routes.description,routes.routeLabels"
+    "routes.legs.steps.distanceMeters,routes.legs.steps.staticDuration,"
+    "routes.legs.steps.navigationInstruction,routes.description,routes.routeLabels"
 )

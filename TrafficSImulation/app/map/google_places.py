@@ -6,7 +6,6 @@ from app.config import (
     GOOGLE_PLACES_SEARCH_URL,
     GOOGLE_REGION_CODE,
 )
-from app.map.projection import project_lat_lng
 from app.map.types import ResolvedPlace
 
 
@@ -75,7 +74,6 @@ def search_place(query: str) -> ResolvedPlace:
         name=str(display_name),
         latitude=float(latitude),
         longitude=float(longitude),
-        point=project_lat_lng(float(latitude), float(longitude)),
         source="google",
     )
 

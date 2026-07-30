@@ -7,13 +7,12 @@ const result = {
   origin: "Downtown Austin", destination: "Austin Airport", mode: "simulated",
   hour: 17, congestion: 56, demand: 68, recommended_route_id: "route-1",
   notice: "Simulated planning estimate.",
+  map_embed_url: "https://www.google.com/maps/embed/v1/view?key=test&center=30.2324,-97.7048&zoom=12&maptype=roadmap",
   weather: { label: "Light rain", severity: 1, time_multiplier: 1.08, price_multiplier: 1.03 },
-  heatmap: { mode: "congestion", cells: [{ row: 0, column: 0, value: 50 }] },
   routes: [{
     id: "route-1", name: "Fastest", objective: "Minimum adjusted time", color: "#55d6be",
     distance_miles: 6.9, base_eta_minutes: 18, adjusted_eta_minutes: 21.7,
     estimated_price: 31.11, congestion_score: 56, demand_score: 68, normalized_score: 0.5,
-    points: [{ x: 500, y: 330 }, { x: 620, y: 400 }, { x: 795, y: 495 }],
     segments: [{ name: "Riverside Dr", length_miles: 3.8, lanes: 3, speed_limit_mph: 45,
       average_speed_mph: 36.2, volume_vehicles_hour: 970, congestion: 0.26,
       capacity_vehicles_hour: 1560, free_flow_minutes: 5, adjusted_minutes: 5.2 }],
@@ -29,14 +28,12 @@ result.routes.push(
     id: "route-2",
     name: "Balanced",
     color: "#ffb35c",
-    points: [{ x: 500, y: 330 }, { x: 650, y: 360 }, { x: 795, y: 495 }]
   },
   {
     ...result.routes[0],
     id: "route-3",
     name: "Low traffic",
     color: "#8aa8ff",
-    points: [{ x: 500, y: 330 }, { x: 590, y: 440 }, { x: 795, y: 495 }]
   }
 );
 
@@ -54,10 +51,7 @@ test("renders the required hierarchy and API results", async () => {
   await waitFor(() => expect(screen.getAllByText("$31.11")).toHaveLength(4));
   expect(screen.getByRole("heading", { name: "Fastest" })).toBeInTheDocument();
   expect(screen.getByText("Riverside Dr")).toBeInTheDocument();
-  expect(screen.getByRole("img", { name: "Three Google routes from point A to point B" })).toBeInTheDocument();
-  expect(container.querySelectorAll("[data-route-id]")).toHaveLength(3);
-  expect(screen.getByText("A")).toBeInTheDocument();
-  expect(screen.getByText("B")).toBeInTheDocument();
+  expect(screen.getByTitle("Map from Downtown Austin to Austin Airport")).toBeInTheDocument();
   expect(container.querySelector(".roads")).not.toBeInTheDocument();
   expect(container.querySelector(".water")).not.toBeInTheDocument();
 });

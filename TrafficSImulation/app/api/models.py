@@ -8,17 +8,10 @@ class PlanRequest(BaseModel):
     origin: str = Field(min_length=1, max_length=120)
     destination: str = Field(min_length=1, max_length=120)
     mode: str = "simulated"
-    heatmap: str = "congestion"
     hour: int = Field(default=17, ge=0, le=23)
     weather: int = Field(default=1, ge=0, le=3)
     congestion: int = Field(default=56, ge=0, le=100)
     demand: int = Field(default=68, ge=0, le=100)
-
-
-@dataclass
-class Point:
-    x: float
-    y: float
 
 
 @dataclass
@@ -48,7 +41,6 @@ class RouteOption:
     demand_score: int
     objective: str
     normalized_score: float
-    points: List[Point]
     segments: List[RoadSegment]
     factors: dict
     data_source: str

@@ -20,7 +20,7 @@ export function useRoutePlan() {
       const response = await fetch("/api/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin, destination, mode, heatmap: "off", ...scenario }),
+        body: JSON.stringify({ origin, destination, mode, ...scenario }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || "Route calculation failed.");

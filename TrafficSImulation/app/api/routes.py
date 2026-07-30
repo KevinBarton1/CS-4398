@@ -1,6 +1,6 @@
 from app.api.models import RouteOption
 from app.config import ROUTE_SCORE_WEIGHTS
-from app.heatmap.builder import build_heatmap
+from app.map.google_embed import build_map_embed_url, compute_map_view
 from app.map.service import build_route_options
 from app.pricing.model import estimate_price
 from app.simulation.traffic import create_segments, time_of_day_factor
@@ -43,18 +43,24 @@ def plan_route(payload):
     weather_level = _bounded(payload, "weather", 1, 0, 3)
     congestion = _bounded(payload, "congestion", 56, 0, 100)
     demand = _bounded(payload, "demand", 68, 0, 100)
-    heatmap_mode = payload.get("heatmap", "congestion")
 
     if mode == "realtime":
         # Reference mode uses traffic-aware Google routing when configured.
         congestion, demand, weather_level = 44, 52, 0
 
-    origin_name, destination_name, raw_routes = build_route_options(
+    origin_name, destination_name, raw_routes, origin_place, destination_place = build_route_options(
         payload.get("origin"),
         payload.get("destination"),
         hour=hour,
         use_traffic=mode == "realtime",
     )
+    center_lat, center_lng, zoom = compute_map_view(
+        origin_place.latitude,
+        origin_place.longitude,
+        destination_place.latitude,
+        destination_place.longitude,
+    )
+    map_embed_url = build_map_embed_url(center_lat, center_lng, zoom)
     weather = weather_adjustment(weather_level)
     time_factor = time_of_day_factor(hour)
     routes = []
@@ -75,8 +81,7 @@ def plan_route(payload):
             adjusted_eta_minutes=adjusted_eta, estimated_price=price,
             congestion_score=route_congestion, demand_score=demand,
             objective=route["objective"], normalized_score=0,
-            points=route["points"], segments=segments,
-            factors=factors, data_source=_route_data_source(mode),
+            segments=segments, factors=factors, data_source=_route_data_source(mode),
         )
         routes.append(option.to_dict())
 
@@ -98,6 +103,6 @@ def plan_route(payload):
         "origin": origin_name, "destination": destination_name, "mode": mode,
         "weather": weather, "hour": hour, "congestion": congestion, "demand": demand,
         "routes": routes, "recommended_route_id": recommended["id"],
-        "heatmap": build_heatmap(congestion, demand, hour, heatmap_mode),
         "notice": _plan_notice(mode),
+        "map_embed_url": map_embed_url,
     }

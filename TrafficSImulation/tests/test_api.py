@@ -27,7 +27,6 @@ def test_typed_plan_endpoint(_mock_build):
         "origin": "Downtown Austin",
         "destination": "Austin Airport",
         "mode": "simulated",
-        "heatmap": "congestion",
         "hour": 17,
         "weather": 1,
         "congestion": 56,
@@ -39,6 +38,7 @@ def test_typed_plan_endpoint(_mock_build):
     assert all(route["objective"] for route in result["routes"])
     assert all("unrounded_total" in route["factors"] for route in result["routes"])
     assert "Google Maps" in result["notice"]
+    assert result["map_embed_url"] is None or result["map_embed_url"].startswith("https://www.google.com/maps/embed/v1/view")
 
 
 def test_out_of_range_scenario_is_rejected():

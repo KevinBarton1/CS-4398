@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
-from app.api.models import Point
 from app.config import (
     GOOGLE_MAPS_API_KEY,
     GOOGLE_REGION_CODE,
@@ -12,8 +11,6 @@ from app.config import (
     ROUTE_COLORS,
 )
 from app.map.google_errors import format_google_api_error
-from app.map.polyline import decode_polyline
-from app.map.projection import project_lat_lng, simplify_polyline
 from app.map.types import ResolvedPlace
 
 
@@ -85,17 +82,7 @@ def _extract_road_names(steps: list[dict]) -> list[str]:
     return names[:2]
 
 
-def _route_points(encoded_polyline: str, origin: ResolvedPlace, destination: ResolvedPlace) -> list[Point]:
-    if encoded_polyline:
-        decoded = decode_polyline(encoded_polyline)
-        if decoded:
-            projected = [project_lat_lng(lat, lng) for lat, lng in decoded]
-            return simplify_polyline(projected)
-
-    return [origin.point, destination.point]
-
-
-def _build_route_option(index: int, route: dict, origin: ResolvedPlace, destination: ResolvedPlace) -> dict:
+def _build_route_option(index: int, route: dict) -> dict:
     legs = route.get("legs") or []
     steps = legs[0].get("steps") if legs else []
     steps = steps or []
@@ -104,7 +91,6 @@ def _build_route_option(index: int, route: dict, origin: ResolvedPlace, destinat
     static_seconds = _parse_duration_seconds(route.get("staticDuration"))
     duration_seconds = _parse_duration_seconds(route.get("duration"))
     base_seconds = static_seconds or duration_seconds or 0
-    encoded_polyline = ((route.get("polyline") or {}).get("encodedPolyline")) or ""
 
     return {
         "id": f"route-{index + 1}",
@@ -113,7 +99,6 @@ def _build_route_option(index: int, route: dict, origin: ResolvedPlace, destinat
         "color": ROUTE_COLORS[index % len(ROUTE_COLORS)],
         "distance_miles": distance_miles,
         "base_eta_minutes": round(base_seconds / 60, 1),
-        "points": _route_points(encoded_polyline, origin, destination),
         "road_names": _extract_road_names(steps),
         "google_steps": steps,
         "google_duration_seconds": duration_seconds,
@@ -171,6 +156,6 @@ def compute_route_options(
         raise ValueError("Google Routes returned no route alternatives for this trip.")
 
     return [
-        _build_route_option(index, route, origin, destination)
+        _build_route_option(index, route)
         for index, route in enumerate(routes[:3])
     ]
