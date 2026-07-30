@@ -1,7 +1,5 @@
 import "@testing-library/jest-dom/vitest";
 
-import "@testing-library/jest-dom/vitest";
-
 class ResizeObserverMock {
   private callback: ResizeObserverCallback;
 
@@ -10,8 +8,11 @@ class ResizeObserverMock {
   }
 
   observe(target: Element) {
+    const rect = target.getBoundingClientRect();
+    const width = rect.width > 0 ? rect.width : 800;
+    const height = rect.height > 0 ? rect.height : 600;
     this.callback(
-      [{ contentRect: target.getBoundingClientRect() } as ResizeObserverEntry],
+      [{ contentRect: { width, height } } as ResizeObserverEntry],
       this as unknown as ResizeObserver
     );
   }
