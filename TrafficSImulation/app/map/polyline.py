@@ -1,34 +1,39 @@
-def decode_polyline(encoded: str) -> list[dict[str, float]]:
-    """Decode a Google encoded polyline into {lat, lng} pairs."""
-    coordinates: list[dict[str, float]] = []
+from app.map.types import LatLngPoint
+
+
+def decode_polyline(encoded: str) -> list[LatLngPoint]:
+    """Decode a Google encoded polyline in origin-to-destination order."""
+    points: list[LatLngPoint] = []
     index = 0
-    lat = 0
-    lng = 0
-    length = len(encoded)
+    latitude = 0
+    longitude = 0
 
-    while index < length:
-        shift = 0
-        result = 0
-        while True:
-            byte = ord(encoded[index]) - 63
-            index += 1
-            result |= (byte & 0x1F) << shift
-            shift += 5
-            if byte < 0x20:
-                break
-        lat += (~(result >> 1) if result & 1 else (result >> 1))
+    while index < len(encoded):
+        latitude_delta, index = _decode_value(encoded, index)
+        longitude_delta, index = _decode_value(encoded, index)
+        latitude += latitude_delta
+        longitude += longitude_delta
+        points.append(
+            LatLngPoint(
+                lat=latitude / 100_000,
+                lng=longitude / 100_000,
+            )
+        )
 
-        shift = 0
-        result = 0
-        while True:
-            byte = ord(encoded[index]) - 63
-            index += 1
-            result |= (byte & 0x1F) << shift
-            shift += 5
-            if byte < 0x20:
-                break
-        lng += (~(result >> 1) if result & 1 else (result >> 1))
+    return points
 
-        coordinates.append({"lat": lat / 1e5, "lng": lng / 1e5})
 
-    return coordinates
+def _decode_value(encoded: str, index: int) -> tuple[int, int]:
+    result = 0
+    shift = 0
+
+    while True:
+        byte = ord(encoded[index]) - 63
+        index += 1
+        result |= (byte & 0x1F) << shift
+        if byte < 0x20:
+            break
+        shift += 5
+
+    value = ~(result >> 1) if result & 1 else result >> 1
+    return value, index

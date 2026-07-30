@@ -219,8 +219,8 @@ class GoogleEmbedTests(unittest.TestCase):
         encoded = "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
         points = decode_polyline(encoded)
         self.assertGreaterEqual(len(points), 2)
-        self.assertIn("lat", points[0])
-        self.assertIn("lng", points[0])
+        self.assertIsInstance(points[0].lat, float)
+        self.assertIsInstance(points[0].lng, float)
 
     def test_compute_map_view_for_polyline_fits_route(self):
         polyline = [
