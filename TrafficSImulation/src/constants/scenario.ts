@@ -4,7 +4,6 @@ export const defaultScenario: Scenario = {
   hour: 17,
   weather: 1,
   congestion: 56,
-  demand: 68,
 };
 
 export const weatherLabels = ["Clear", "Light rain", "Heavy rain", "Severe"];

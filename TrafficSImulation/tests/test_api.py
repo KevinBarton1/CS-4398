@@ -21,6 +21,7 @@ def test_health_endpoint():
     assert "message" in body["google_maps"]
 
 
+@patch("app.map.google_embed.GOOGLE_MAPS_API_KEY", "test-key")
 @patch("app.api.routes.build_route_options", side_effect=mock_build_route_options)
 def test_typed_plan_endpoint(_mock_build):
     response = client.post("/api/plan", json={
@@ -30,7 +31,6 @@ def test_typed_plan_endpoint(_mock_build):
         "hour": 17,
         "weather": 1,
         "congestion": 56,
-        "demand": 68,
     })
     assert response.status_code == 200
     result = response.json()
@@ -38,13 +38,14 @@ def test_typed_plan_endpoint(_mock_build):
     assert all(route["objective"] for route in result["routes"])
     assert all("unrounded_total" in route["factors"] for route in result["routes"])
     assert "Google Maps" in result["notice"]
-    assert result["map_embed_url"] is None or result["map_embed_url"].startswith("https://www.google.com/maps/embed/v1/view")
+    assert result["directions_embed_url"].startswith("https://www.google.com/maps/embed/v1/directions")
     assert "map_view" in result
     assert "center_lat" in result["map_view"]
     assert all("polyline" in route for route in result["routes"])
     assert all("map_view" in route for route in result["routes"])
-    assert all("map_embed_url" in route for route in result["routes"])
-    assert "directions_embed_url" not in result
+    assert all(route["segments"] for route in result["routes"])
+    assert all("traffic_intervals" in route for route in result["routes"])
+    assert "demand" not in result
 
 
 @patch("app.map.google_embed.GOOGLE_MAPS_API_KEY", "test-key")
@@ -72,6 +73,13 @@ def test_out_of_range_scenario_is_rejected():
         "weather": 99,
     })
     assert response.status_code == 422
+
+
+@patch("main.GOOGLE_MAPS_API_KEY", "test-key")
+def test_map_config_endpoint():
+    response = client.get("/api/map/config")
+    assert response.status_code == 200
+    assert response.json()["maps_api_key"] == "test-key"
 
 
 @patch("app.map.google_embed.GOOGLE_MAPS_API_KEY", "test-key")

@@ -15,7 +15,6 @@ export function Analysis({ route, recommended, mode, scenario, setScenario, onRe
   if (!route) return <aside className="analysis skeleton" />;
 
   const factors = route.factors;
-  const scenarioDisabled = mode === "realtime";
 
   const control = (
     key: keyof Scenario,
@@ -34,11 +33,7 @@ export function Analysis({ route, recommended, mode, scenario, setScenario, onRe
         min={min}
         max={max}
         value={scenario[key]}
-        disabled={scenarioDisabled}
-        onChange={(e) => {
-          if (scenarioDisabled) return;
-          setScenario({ ...scenario, [key]: Number(e.target.value) });
-        }}
+        onChange={(e) => setScenario({ ...scenario, [key]: Number(e.target.value) })}
       />
     </label>
   );
@@ -84,24 +79,22 @@ export function Analysis({ route, recommended, mode, scenario, setScenario, onRe
         <p>Illustrative estimate only. Not an official Uber or Lyft fare.</p>
       </section>
 
-      <section className={`card scenario${scenarioDisabled ? " panel-disabled" : ""}`}>
-        <div className="heading">
-          <div>
-            <span className="eyebrow">Scenario lab</span>
-            <h2>Shape conditions</h2>
+      {mode === "simulated" && (
+        <section className="card scenario">
+          <div className="heading">
+            <div>
+              <span className="eyebrow">Scenario lab</span>
+              <h2>Shape conditions</h2>
+            </div>
+            <button type="button" onClick={onReset}>
+              Reset
+            </button>
           </div>
-          <button type="button" onClick={onReset} disabled={scenarioDisabled}>
-            Reset
-          </button>
-        </div>
-        {scenarioDisabled && (
-          <p className="panel-disabled-note">Scenario controls are available in Simulated mode.</p>
-        )}
-        {control("hour", "Time of day", 0, 23, hourLabel(scenario.hour))}
-        {control("weather", "Weather", 0, 3, weatherLabels[scenario.weather])}
-        {control("congestion", "Congestion", 0, 100, `${scenario.congestion}%`)}
-        {control("demand", "Customer demand", 0, 100, `${scenario.demand}%`)}
-      </section>
+          {control("hour", "Time of day", 0, 23, hourLabel(scenario.hour))}
+          {control("weather", "Weather", 0, 3, weatherLabels[scenario.weather])}
+          {control("congestion", "Congestion", 0, 100, `${scenario.congestion}%`)}
+        </section>
+      )}
 
       <section className="card road-detail">
         <span className="eyebrow">Road detail</span>

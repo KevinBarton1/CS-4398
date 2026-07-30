@@ -11,7 +11,6 @@ class PlanRequest(BaseModel):
     hour: int = Field(default=17, ge=0, le=23)
     weather: int = Field(default=1, ge=0, le=3)
     congestion: int = Field(default=56, ge=0, le=100)
-    demand: int = Field(default=68, ge=0, le=100)
 
 
 class MapEmbedRequest(BaseModel):
@@ -32,6 +31,13 @@ class RoadSegment:
     capacity_vehicles_hour: int
     free_flow_minutes: float
     adjusted_minutes: float
+    traffic_ratio: float = 1.0
+    polyline: List[dict] | None = None
+
+    def to_dict(self):
+        payload = asdict(self)
+        payload["polyline"] = self.polyline or []
+        return payload
 
 
 @dataclass
@@ -44,7 +50,6 @@ class RouteOption:
     adjusted_eta_minutes: float
     estimated_price: float
     congestion_score: int
-    demand_score: int
     objective: str
     normalized_score: float
     segments: List[RoadSegment]
@@ -53,4 +58,7 @@ class RouteOption:
     polyline: List[dict]
 
     def to_dict(self):
-        return asdict(self)
+        return {
+            **asdict(self),
+            "segments": [segment.to_dict() if hasattr(segment, "to_dict") else segment for segment in self.segments],
+        }

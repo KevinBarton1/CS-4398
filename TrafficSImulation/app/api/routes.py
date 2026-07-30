@@ -26,18 +26,28 @@ def _route_data_source(mode: str) -> str:
 def _plan_notice(mode: str) -> str:
     if mode == "realtime":
         return "Real-Time mode: route, distance, and travel time from Google Maps with traffic-aware routing."
-    return "Route geometry and distances from Google Maps; demand, weather, and prices remain simulated planning estimates."
+    return (
+        "Route geometry and distances from Google Maps with departure-hour traffic; "
+        "weather adjusts planning estimates."
+    )
 
 
 def _adjusted_eta_minutes(route, mode, weather, time_factor, bpr_minutes):
     google_duration = route.get("google_duration_seconds")
     google_static = route.get("google_static_duration_seconds")
-    if route.get("map_source") == "google" and mode == "realtime" and google_duration:
-        adjusted_eta_raw = (google_duration / 60) * weather["time_multiplier"] * time_factor
+    if route.get("map_source") == "google" and google_duration and google_static:
+        if mode == "simulated":
+            adjusted_eta_raw = (google_duration / 60) * weather["time_multiplier"]
+        else:
+            adjusted_eta_raw = (google_duration / 60) * weather["time_multiplier"] * time_factor
     elif route.get("map_source") == "google" and google_static:
-        adjusted_eta_raw = (google_static / 60) * weather["time_multiplier"] * time_factor
+        adjusted_eta_raw = (google_static / 60) * weather["time_multiplier"]
+        if mode == "realtime":
+            adjusted_eta_raw *= time_factor
     else:
-        adjusted_eta_raw = bpr_minutes * weather["time_multiplier"] * time_factor
+        adjusted_eta_raw = bpr_minutes * weather["time_multiplier"]
+        if mode == "realtime":
+            adjusted_eta_raw *= time_factor
     return round(adjusted_eta_raw, 1), adjusted_eta_raw
 
 
@@ -46,17 +56,16 @@ def plan_route(payload):
     hour = _bounded(payload, "hour", 17, 0, 23)
     weather_level = _bounded(payload, "weather", 1, 0, 3)
     congestion = _bounded(payload, "congestion", 56, 0, 100)
-    demand = _bounded(payload, "demand", 68, 0, 100)
 
     if mode == "realtime":
-        # Reference mode uses traffic-aware Google routing when configured.
-        congestion, demand, weather_level = 44, 52, 0
+        congestion, weather_level = 44, 0
 
     origin_name, destination_name, raw_routes, _, _ = build_route_options(
         payload.get("origin"),
         payload.get("destination"),
         hour=hour,
-        use_traffic=mode == "realtime",
+        use_traffic=True,
+        compute_alternatives=mode == "simulated",
     )
     if mode == "realtime":
         raw_routes = raw_routes[:1]
@@ -71,8 +80,11 @@ def plan_route(payload):
             route, mode, weather, time_factor, bpr_minutes,
         )
         price, factors = estimate_price(
-            route["distance_miles"], adjusted_eta_raw, route_congestion, demand,
-            weather["price_multiplier"], time_factor,
+            route["distance_miles"],
+            adjusted_eta_raw,
+            route_congestion,
+            weather["price_multiplier"],
+            time_factor if mode == "realtime" else None,
         )
         polyline = route.get("polyline") or []
         center_lat, center_lng, zoom = compute_map_view_for_polyline(polyline)
@@ -80,12 +92,13 @@ def plan_route(payload):
             id=route["id"], name=route["name"], color=route["color"],
             distance_miles=route["distance_miles"], base_eta_minutes=route["base_eta_minutes"],
             adjusted_eta_minutes=adjusted_eta, estimated_price=price,
-            congestion_score=route_congestion, demand_score=demand,
+            congestion_score=route_congestion,
             objective=route["objective"], normalized_score=0,
             segments=segments, factors=factors, data_source=_route_data_source(mode),
             polyline=polyline,
         )
         route_dict = option.to_dict()
+        route_dict["traffic_intervals"] = route.get("traffic_intervals") or []
         route_dict["map_view"] = {
             "center_lat": center_lat,
             "center_lng": center_lng,
@@ -103,19 +116,18 @@ def plan_route(payload):
         item["normalized_score"] = round(
             ROUTE_SCORE_WEIGHTS["time"] * item["adjusted_eta_minutes"] / maxima["time"]
             + ROUTE_SCORE_WEIGHTS["distance"] * item["distance_miles"] / maxima["distance"]
-            + ROUTE_SCORE_WEIGHTS["congestion"] * item["congestion_score"] / maxima["congestion"]
-            - ROUTE_SCORE_WEIGHTS["demand"] * item["demand_score"] / 100,
+            + ROUTE_SCORE_WEIGHTS["congestion"] * item["congestion_score"] / maxima["congestion"],
             4,
         )
     recommended = min(routes, key=lambda item: item["normalized_score"])
+    directions_embed_url = build_directions_embed_url(origin_name, destination_name)
     response = {
         "origin": origin_name, "destination": destination_name, "mode": mode,
-        "weather": weather, "hour": hour, "congestion": congestion, "demand": demand,
+        "weather": weather, "hour": hour, "congestion": congestion,
         "routes": routes, "recommended_route_id": recommended["id"],
         "notice": _plan_notice(mode),
         "map_embed_url": recommended["map_embed_url"],
         "map_view": recommended["map_view"],
+        "directions_embed_url": directions_embed_url,
     }
-    if mode == "realtime":
-        response["directions_embed_url"] = build_directions_embed_url(origin_name, destination_name)
     return response

@@ -83,6 +83,37 @@ def _extract_road_names(steps: list[dict]) -> list[str]:
     return names[:2]
 
 
+def _extract_speed_intervals(route: dict) -> list[dict]:
+    intervals: list[dict] = []
+
+    def append_intervals(items: list[dict]) -> None:
+        for item in items:
+            end_index = item.get("endPolylinePointIndex")
+            if end_index is None:
+                continue
+            intervals.append({
+                "start_index": int(item.get("startPolylinePointIndex") or 0),
+                "end_index": int(end_index),
+                "speed": item.get("speed") or "NORMAL",
+            })
+
+    for leg in route.get("legs") or []:
+        advisory = leg.get("travelAdvisory") or {}
+        append_intervals(advisory.get("speedReadingIntervals") or [])
+
+    if not intervals:
+        route_advisory = route.get("travelAdvisory") or {}
+        append_intervals(route_advisory.get("speedReadingIntervals") or [])
+
+    return intervals
+
+
+def _traffic_ratio(duration_seconds: float | None, static_seconds: float | None) -> float:
+    if not duration_seconds or not static_seconds or static_seconds <= 0:
+        return 1.0
+    return round(duration_seconds / static_seconds, 4)
+
+
 def _build_route_option(index: int, route: dict) -> dict:
     legs = route.get("legs") or []
     steps = legs[0].get("steps") if legs else []
@@ -92,6 +123,7 @@ def _build_route_option(index: int, route: dict) -> dict:
     static_seconds = _parse_duration_seconds(route.get("staticDuration"))
     duration_seconds = _parse_duration_seconds(route.get("duration"))
     base_seconds = static_seconds or duration_seconds or 0
+    traffic_ratio = _traffic_ratio(duration_seconds, static_seconds)
 
     encoded_polyline = (route.get("polyline") or {}).get("encodedPolyline") or ""
     polyline = decode_polyline(encoded_polyline) if encoded_polyline else []
@@ -107,6 +139,8 @@ def _build_route_option(index: int, route: dict) -> dict:
         "google_steps": steps,
         "google_duration_seconds": duration_seconds,
         "google_static_duration_seconds": static_seconds,
+        "traffic_ratio": traffic_ratio,
+        "traffic_intervals": _extract_speed_intervals(route),
         "polyline": polyline,
         "map_source": "google",
     }
@@ -116,7 +150,8 @@ def compute_route_options(
     origin: ResolvedPlace,
     destination: ResolvedPlace,
     hour: int = 17,
-    use_traffic: bool = False,
+    use_traffic: bool = True,
+    compute_alternatives: bool = True,
 ) -> list[dict]:
     _require_api_key()
 
@@ -133,7 +168,7 @@ def compute_route_options(
         "origin": _waypoint(origin),
         "destination": _waypoint(destination),
         "travelMode": "DRIVE",
-        "computeAlternativeRoutes": not use_traffic,
+        "computeAlternativeRoutes": compute_alternatives,
         "routingPreference": "TRAFFIC_AWARE" if use_traffic else "TRAFFIC_UNAWARE",
         "units": "IMPERIAL",
         "regionCode": GOOGLE_REGION_CODE,
@@ -141,6 +176,7 @@ def compute_route_options(
     # departureTime is only valid with traffic-aware routing preferences.
     if use_traffic:
         payload["departureTime"] = departure.isoformat().replace("+00:00", "Z")
+        payload["extraComputations"] = ["TRAFFIC_ON_POLYLINE"]
 
     try:
         response = httpx.post(
@@ -160,7 +196,7 @@ def compute_route_options(
     if not routes:
         raise ValueError("Google Routes returned no route alternatives for this trip.")
 
-    limit = 1 if use_traffic else 3
+    limit = 3 if compute_alternatives else 1
     return [
         _build_route_option(index, route)
         for index, route in enumerate(routes[:limit])

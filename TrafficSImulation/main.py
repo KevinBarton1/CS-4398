@@ -59,6 +59,13 @@ def map_embed(request: MapEmbedRequest):
     return {"map_embed_url": url}
 
 
+@app.get("/api/map/config")
+def map_config():
+    if not GOOGLE_MAPS_API_KEY:
+        raise HTTPException(status_code=400, detail="GOOGLE_MAPS_API_KEY is not configured.")
+    return {"maps_api_key": GOOGLE_MAPS_API_KEY}
+
+
 if STATIC.exists():
     app.mount("/assets", StaticFiles(directory=STATIC / "assets"), name="assets")
 

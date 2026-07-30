@@ -23,10 +23,9 @@ WEATHER_PRICE_MULTIPLIERS = (1.0, 1.03, 1.07, 1.12)
 WEATHER_LABELS = ("Clear", "Light rain", "Heavy rain", "Severe")
 
 ROUTE_SCORE_WEIGHTS = {
-    "time": 0.42,
-    "distance": 0.18,
-    "congestion": 0.25,
-    "demand": 0.15,
+    "time": 0.47,
+    "distance": 0.23,
+    "congestion": 0.30,
 }
 
 ROUTE_COLORS = ["#55d6be", "#ffb35c", "#4d72e8"]
@@ -46,6 +45,9 @@ AUSTIN_LOCATION_BIAS = {
 GOOGLE_ROUTES_FIELD_MASK = (
     "routes.duration,routes.staticDuration,routes.distanceMeters,"
     "routes.polyline.encodedPolyline,"
+    "routes.travelAdvisory.speedReadingIntervals,"
+    "routes.legs.travelAdvisory.speedReadingIntervals,"
     "routes.legs.steps.distanceMeters,routes.legs.steps.staticDuration,"
+    "routes.legs.steps.polyline.encodedPolyline,"
     "routes.legs.steps.navigationInstruction,routes.description,routes.routeLabels"
 )

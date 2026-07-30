@@ -67,8 +67,8 @@ Header / Toast                                                ├── pricing/
 
 **Core request flow:**
 
-1. `useRoutePlan` POSTs `{ origin, destination, mode, hour, weather, congestion, demand }` to `/api/plan`.
-2. `plan_route()` geocodes via Google Places, fetches up to 3 routes via Google Routes, runs BPR traffic simulation, applies weather/time multipliers, estimates price, builds heatmap, scores routes, returns JSON.
+1. `useRoutePlan` POSTs `{ origin, destination, mode, hour, weather, congestion }` to `/api/plan`.
+2. `plan_route()` geocodes via Google Places, fetches up to 3 routes via Google Routes (traffic-aware with `departureTime`), applies weather multipliers, estimates price, builds heatmap, scores routes, returns JSON.
 3. Frontend renders route cards, map embed + SVG polylines, and analysis panel.
 
 ---
@@ -127,13 +127,12 @@ Use this table to find code without searching the whole repo.
   "mode": "simulated",
   "hour": 17,
   "weather": 1,
-  "congestion": 56,
-  "demand": 68
+  "congestion": 56
 }
 ```
 
-- `mode`: `"simulated"` (user controls scenario sliders) or `"realtime"` (traffic-aware Google routing; sliders reset to baseline).
-- Validation: origin/destination 1–120 chars; hour 0–23; weather 0–3; congestion/demand 0–100. Out-of-range → HTTP 422.
+- `mode`: `"simulated"` (user controls scenario sliders; Google traffic anchored to departure hour) or `"realtime"` (traffic-aware Google routing; scenario sliders hidden).
+- Validation: origin/destination 1–120 chars; hour 0–23; weather 0–3; congestion 0–100. Out-of-range → HTTP 422.
 - Business errors (bad locations, missing API key) → HTTP 400 with `detail` string.
 
 ### Shared types (keep in sync)
@@ -150,8 +149,8 @@ When changing response shape, update **both** files and relevant tests.
 
 | Mode | Behavior |
 |------|----------|
-| `simulated` | Google provides route geometry/distances; congestion, demand, weather, and prices come from user sliders. |
-| `realtime` | Google traffic-aware durations when available; scenario sliders are overridden to baseline values server-side. |
+| `simulated` | Google provides route geometry and departure-hour traffic; congestion and weather sliders adjust planning estimates. Map uses directions embed + segment-colored SVG overlay. |
+| `realtime` | Google traffic-aware durations when available; scenario sliders hidden. Directions embed only (no overlay). |
 
 Route planning **requires** a valid `GOOGLE_MAPS_API_KEY` (Places + Routes APIs). Without it, `/api/plan` returns HTTP 400.
 

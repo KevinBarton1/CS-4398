@@ -28,7 +28,6 @@ class RoutePlanningTests(unittest.TestCase):
             "hour": 12,
             "weather": 0,
             "congestion": 40,
-            "demand": 50,
         }
 
     def test_route_options_have_segments(self, _mock_build):
@@ -62,12 +61,16 @@ class RoutePlanningTests(unittest.TestCase):
         factors = route["factors"]
         reproduced = (
             factors["route_subtotal"]
-            * factors["demand_multiplier"]
             * factors["traffic_multiplier"]
             * factors["weather_multiplier"]
-            * factors["time_multiplier"]
         )
         self.assertAlmostEqual(route["estimated_price"], round(reproduced, 2), places=2)
+
+    def test_simulated_plan_includes_directions_embed(self, _mock_build):
+        with patch("app.map.google_embed.GOOGLE_MAPS_API_KEY", "test-key"):
+            result = plan_route(self.payload)
+        self.assertIn("directions_embed_url", result)
+        self.assertIn("https://www.google.com/maps/embed/v1/directions?", result["directions_embed_url"])
 
     def test_weather_increases_eta_monotonically(self, _mock_build):
         eta = [
@@ -189,7 +192,7 @@ class GoogleIntegrationTests(unittest.TestCase):
                 ):
                     compute_route_options(origin, destination)
 
-    def test_routes_payload_omits_departure_time_when_traffic_unaware(self):
+    def test_routes_payload_includes_departure_time_when_traffic_aware(self):
         origin = ResolvedPlace("Downtown Austin", 30.27, -97.74, "google")
         destination = ResolvedPlace("Austin Airport", 30.20, -97.67, "google")
         mock_response = {"routes": [{"distanceMeters": 16093, "staticDuration": "1200s", "legs": [{"steps": []}]}]}
@@ -203,10 +206,11 @@ class GoogleIntegrationTests(unittest.TestCase):
                 self.assertEqual("TRAFFIC_UNAWARE", payload["routingPreference"])
                 self.assertNotIn("departureTime", payload)
 
-                compute_route_options(origin, destination, use_traffic=True)
+                compute_route_options(origin, destination, use_traffic=True, compute_alternatives=True)
                 traffic_payload = post_mock.call_args.kwargs["json"]
                 self.assertEqual("TRAFFIC_AWARE", traffic_payload["routingPreference"])
                 self.assertIn("departureTime", traffic_payload)
+                self.assertTrue(traffic_payload["computeAlternativeRoutes"])
 
 
 class GoogleEmbedTests(unittest.TestCase):
