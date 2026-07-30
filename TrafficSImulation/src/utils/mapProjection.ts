@@ -20,7 +20,7 @@ export function projectLatLng(
   point: LatLng,
   view: MapView,
   width: number,
-  height: number,
+  height: number
 ): { x: number; y: number } {
   const scale = 256 * 2 ** view.zoom;
   const world = worldCoordinate(point.lat, point.lng, scale);
@@ -35,13 +35,13 @@ export function polylineToPath(
   polyline: LatLng[],
   view: MapView,
   width: number,
-  height: number,
+  height: number
 ): string {
   if (polyline.length === 0) return "";
   return polyline
     .map((point, index) => {
       const { x, y } = projectLatLng(point, view, width, height);
-      return `${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
+      return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
 }

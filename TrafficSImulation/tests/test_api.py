@@ -39,6 +39,9 @@ def test_typed_plan_endpoint(_mock_build):
     assert all("unrounded_total" in route["factors"] for route in result["routes"])
     assert "Google Maps" in result["notice"]
     assert result["map_embed_url"] is None or result["map_embed_url"].startswith("https://www.google.com/maps/embed/v1/view")
+    assert "map_view" in result
+    assert "center_lat" in result["map_view"]
+    assert all("polyline" in route for route in result["routes"])
 
 
 def test_out_of_range_scenario_is_rejected():

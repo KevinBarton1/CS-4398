@@ -7,6 +7,7 @@ from app.map.google_embed import build_map_embed_url, compute_map_view
 from app.map.google_errors import format_google_api_error
 from app.map.google_places import resolve_place
 from app.map.google_routes import compute_route_options
+from app.map.polyline import decode_polyline
 from app.map.types import ResolvedPlace
 from app.simulation.traffic import bpr_adjusted_time
 from tests.google_mocks import mock_build_route_options, mock_google_routes
@@ -30,6 +31,8 @@ class RoutePlanningTests(unittest.TestCase):
         self.assertEqual(3, len(result["routes"]))
         self.assertTrue(all(route["segments"] for route in result["routes"]))
         self.assertIn("map_embed_url", result)
+        self.assertIn("map_view", result)
+        self.assertTrue(all(route["polyline"] for route in result["routes"]))
 
     def test_adverse_conditions_increase_eta(self, _mock_build):
         clear = plan_route(self.payload)["routes"][0]
@@ -202,6 +205,14 @@ class GoogleIntegrationTests(unittest.TestCase):
 
 
 class GoogleEmbedTests(unittest.TestCase):
+    def test_polyline_decoder_returns_coordinates(self):
+        # Encoded polyline for two nearby Austin points.
+        encoded = "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
+        points = decode_polyline(encoded)
+        self.assertGreaterEqual(len(points), 2)
+        self.assertIn("lat", points[0])
+        self.assertIn("lng", points[0])
+
     def test_compute_map_view_centers_between_points(self):
         center_lat, center_lng, zoom = compute_map_view(30.2672, -97.7431, 30.1975, -97.6664)
         self.assertAlmostEqual(center_lat, 30.23235, places=4)

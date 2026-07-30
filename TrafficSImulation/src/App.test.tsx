@@ -8,6 +8,7 @@ const result = {
   hour: 17, congestion: 56, demand: 68, recommended_route_id: "route-1",
   notice: "Simulated planning estimate.",
   map_embed_url: "https://www.google.com/maps/embed/v1/view?key=test&center=30.2324,-97.7048&zoom=12&maptype=roadmap",
+  map_view: { center_lat: 30.2324, center_lng: -97.7048, zoom: 12 },
   weather: { label: "Light rain", severity: 1, time_multiplier: 1.08, price_multiplier: 1.03 },
   routes: [{
     id: "route-1", name: "Fastest", objective: "Minimum adjusted time", color: "#55d6be",
@@ -18,7 +19,13 @@ const result = {
       capacity_vehicles_hour: 1560, free_flow_minutes: 5, adjusted_minutes: 5.2 }],
     factors: { route_subtotal: 19.3, demand_multiplier: 1.19, traffic_multiplier: 1.08,
       weather_multiplier: 1.03, time_multiplier: 1.22, unrounded_total: 31.11 },
-    data_source: "Simulated scenario"
+    data_source: "Simulated scenario",
+    polyline: [
+      { lat: 30.2672, lng: -97.7431 },
+      { lat: 30.2500, lng: -97.7200 },
+      { lat: 30.2300, lng: -97.6900 },
+      { lat: 30.1975, lng: -97.6664 },
+    ],
   }]
 };
 
@@ -52,6 +59,7 @@ test("renders the required hierarchy and API results", async () => {
   expect(screen.getByRole("heading", { name: "Fastest" })).toBeInTheDocument();
   expect(screen.getByText("Riverside Dr")).toBeInTheDocument();
   expect(screen.getByTitle("Map from Downtown Austin to Austin Airport")).toBeInTheDocument();
+  expect(container.querySelector(".route-overlay")).toBeInTheDocument();
   expect(container.querySelector(".roads")).not.toBeInTheDocument();
   expect(container.querySelector(".water")).not.toBeInTheDocument();
 });
