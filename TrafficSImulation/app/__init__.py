@@ -1,2 +1,0 @@
-"""Traffic simulation application package."""
-
