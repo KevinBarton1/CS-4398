@@ -8,20 +8,15 @@ from app.config import (
     GOOGLE_REGION_CODE,
     GOOGLE_ROUTES_COMPUTE_URL,
     GOOGLE_ROUTES_FIELD_MASK,
+    ROUTES_TIMEOUT_SECONDS,
+    ROUTE_ALTERNATIVES_MAX,
     ROUTE_COLORS,
+    ROUTE_NAMES,
+    ROUTE_OBJECTIVES,
 )
 from app.map.google_errors import format_google_api_error
 from app.map.polyline import decode_polyline
 from app.map.types import ResolvedPlace
-
-
-ROUTE_NAMES = ("Fastest", "Balanced", "Low traffic")
-ROUTE_OBJECTIVES = (
-    "Minimum adjusted time",
-    "Weighted time, distance, congestion and demand",
-    "Minimum congestion exposure",
-)
-
 
 def _parse_duration_seconds(value) -> float | None:
     if value is None:
@@ -183,7 +178,7 @@ def compute_route_options(
             GOOGLE_ROUTES_COMPUTE_URL,
             json=payload,
             headers=_routes_headers(),
-            timeout=10.0,
+            timeout=ROUTES_TIMEOUT_SECONDS,
         )
         response.raise_for_status()
     except httpx.HTTPStatusError as error:
@@ -196,7 +191,7 @@ def compute_route_options(
     if not routes:
         raise ValueError("Google Routes returned no route alternatives for this trip.")
 
-    limit = 3 if compute_alternatives else 1
+    limit = ROUTE_ALTERNATIVES_MAX if compute_alternatives else 1
     return [
         _build_route_option(index, route)
         for index, route in enumerate(routes[:limit])

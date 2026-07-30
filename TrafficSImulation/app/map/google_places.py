@@ -3,8 +3,10 @@ import httpx
 from app.config import (
     AUSTIN_LOCATION_BIAS,
     GOOGLE_MAPS_API_KEY,
+    GOOGLE_PLACES_FIELD_MASK,
     GOOGLE_PLACES_SEARCH_URL,
     GOOGLE_REGION_CODE,
+    PLACES_TIMEOUT_SECONDS,
 )
 from app.map.types import ResolvedPlace
 
@@ -22,7 +24,7 @@ def _places_headers() -> dict[str, str]:
     return {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
-        "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.location",
+        "X-Goog-FieldMask": GOOGLE_PLACES_FIELD_MASK,
     }
 
 
@@ -45,7 +47,7 @@ def search_place(query: str) -> ResolvedPlace:
             GOOGLE_PLACES_SEARCH_URL,
             json=payload,
             headers=_places_headers(),
-            timeout=8.0,
+            timeout=PLACES_TIMEOUT_SECONDS,
         )
         response.raise_for_status()
     except httpx.HTTPStatusError as error:

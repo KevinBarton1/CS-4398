@@ -6,6 +6,8 @@ from app.config import (
     GOOGLE_PLACES_SEARCH_URL,
     GOOGLE_REGION_CODE,
     GOOGLE_ROUTES_COMPUTE_URL,
+    PLACES_TIMEOUT_SECONDS,
+    ROUTES_TIMEOUT_SECONDS,
 )
 from app.map.google_places import search_place
 from app.map.types import ResolvedPlace
@@ -28,7 +30,7 @@ def _places_probe() -> tuple[bool, str]:
                 "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
                 "X-Goog-FieldMask": "places.displayName,places.location",
             },
-            timeout=10.0,
+            timeout=PLACES_TIMEOUT_SECONDS,
         )
         if response.status_code != 200:
             detail = response.text.strip().replace("\n", " ")[:240]
@@ -72,7 +74,7 @@ def _routes_probe(origin: ResolvedPlace, destination: ResolvedPlace) -> tuple[bo
                 "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
                 "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
             },
-            timeout=10.0,
+            timeout=ROUTES_TIMEOUT_SECONDS,
         )
         if response.status_code != 200:
             detail = response.text.strip().replace("\n", " ")[:240]
