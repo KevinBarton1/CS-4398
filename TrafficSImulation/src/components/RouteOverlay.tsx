@@ -31,7 +31,7 @@ export function RouteOverlay({ routes, selectedId, mapView, width, height }: Rou
             strokeWidth={active ? 5 : 3}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity={active ? 1 : selectedId ? 0.35 : 0.75}
+            opacity={active ? 1 : selectedId ? 0.68 : 0.85}
           />
         );
       })}

@@ -74,6 +74,7 @@ test("renders the required hierarchy and API results", async () => {
     expect(screen.getByTitle("Map from Downtown Austin to Austin Airport")).toBeInTheDocument()
   );
   expect(container.querySelector(".route-overlay")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "View all" })).toBeInTheDocument();
   expect(container.querySelector(".roads")).not.toBeInTheDocument();
   expect(container.querySelector(".water")).not.toBeInTheDocument();
 });

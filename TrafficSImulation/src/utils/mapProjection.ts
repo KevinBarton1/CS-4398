@@ -75,3 +75,14 @@ export function computeMapViewForPolyline(
 
   return { center_lat, center_lng, zoom: 1 };
 }
+
+/** Fit every point from multiple route polylines inside the viewport. */
+export function computeMapViewForPolylines(
+  polylines: LatLng[][],
+  width: number,
+  height: number,
+  margin = 16
+): MapView | null {
+  const points = polylines.reduce<LatLng[]>((all, line) => all.concat(line), []);
+  return computeMapViewForPolyline(points, width, height, margin);
+}

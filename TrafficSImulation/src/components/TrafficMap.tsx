@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MapView, PlanResult, RouteOption } from "../types";
-import { computeMapViewForPolyline } from "../utils/mapProjection";
+import { computeMapViewForPolylines, computeMapViewForPolyline } from "../utils/mapProjection";
 import { RouteOverlay } from "./RouteOverlay";
 
 interface TrafficMapProps {
@@ -27,18 +27,28 @@ export function TrafficMap({ data, routes = [], selectedId }: TrafficMapProps) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [embedUrl, setEmbedUrl] = useState<string | null>(data?.map_embed_url ?? null);
   const [mapView, setMapView] = useState<MapView | undefined>(data?.map_view);
+  const [viewAll, setViewAll] = useState(false);
 
   const selectedRoute = useMemo(
     () => routes.find((route) => route.id === selectedId) ?? routes[0],
     [routes, selectedId]
   );
 
+  useEffect(() => {
+    setViewAll(false);
+  }, [selectedId]);
+
   const computedView = useMemo(() => {
-    if (!selectedRoute?.polyline.length || size.width === 0 || size.height === 0) {
-      return undefined;
+    if (size.width === 0 || size.height === 0) return undefined;
+
+    if (viewAll) {
+      const polylines = routes.map((route) => route.polyline).filter((line) => line.length > 1);
+      return computeMapViewForPolylines(polylines, size.width, size.height) ?? undefined;
     }
+
+    if (!selectedRoute?.polyline.length) return undefined;
     return computeMapViewForPolyline(selectedRoute.polyline, size.width, size.height) ?? undefined;
-  }, [selectedRoute, size]);
+  }, [viewAll, selectedRoute, routes, size]);
 
   useEffect(() => {
     const node = shellRef.current;
@@ -93,6 +103,16 @@ export function TrafficMap({ data, routes = [], selectedId }: TrafficMapProps) {
             width={size.width}
             height={size.height}
           />
+          {routes.length > 1 && (
+            <button
+              type="button"
+              className={`map-view-all${viewAll ? " active" : ""}`}
+              onClick={() => setViewAll(true)}
+              aria-pressed={viewAll}
+            >
+              View all
+            </button>
+          )}
         </>
       ) : (
         <p className="map-placeholder">{data?.notice ?? "Enter two locations to compare routes."}</p>

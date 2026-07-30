@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeMapViewForPolyline, polylineToPath, projectLatLng } from "./mapProjection";
+import { computeMapViewForPolylines, computeMapViewForPolyline, polylineToPath, projectLatLng } from "./mapProjection";
 
 describe("mapProjection", () => {
   const view = { center_lat: 30.2324, center_lng: -97.7048, zoom: 12 };
@@ -48,5 +48,24 @@ describe("mapProjection", () => {
       expect(y).toBeGreaterThanOrEqual(16);
       expect(y).toBeLessThanOrEqual(584);
     }
+  });
+
+  it("fits all route polylines when viewing every alternative", () => {
+    const altPolyline = [
+      { lat: 30.2700, lng: -97.7600 },
+      { lat: 30.2400, lng: -97.7100 },
+      { lat: 30.1900, lng: -97.6500 },
+    ];
+    const fitted = computeMapViewForPolylines([samplePolyline, altPolyline], 800, 600);
+    expect(fitted).not.toBeNull();
+    for (const point of [...samplePolyline, ...altPolyline]) {
+      const { x, y } = projectLatLng(point, fitted!, 800, 600);
+      expect(x).toBeGreaterThanOrEqual(16);
+      expect(x).toBeLessThanOrEqual(784);
+      expect(y).toBeGreaterThanOrEqual(16);
+      expect(y).toBeLessThanOrEqual(584);
+    }
+    const single = computeMapViewForPolyline(samplePolyline, 800, 600);
+    expect(fitted!.zoom).toBeLessThanOrEqual(single!.zoom);
   });
 });
