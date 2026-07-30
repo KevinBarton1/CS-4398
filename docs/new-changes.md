@@ -1,0 +1,1 @@
+Remove the map embed API entirely and replace it with map javascript API
