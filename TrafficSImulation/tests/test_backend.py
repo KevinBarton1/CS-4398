@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from app.api.routes import plan_route
-from app.map.google_embed import build_map_embed_url, compute_map_view
+from app.map.google_embed import build_map_embed_url, compute_map_view, compute_map_view_for_polyline
 from app.map.google_errors import format_google_api_error
 from app.map.google_places import resolve_place
 from app.map.google_routes import compute_route_options
@@ -212,6 +212,18 @@ class GoogleEmbedTests(unittest.TestCase):
         self.assertGreaterEqual(len(points), 2)
         self.assertIn("lat", points[0])
         self.assertIn("lng", points[0])
+
+    def test_compute_map_view_for_polyline_fits_route(self):
+        polyline = [
+            {"lat": 30.2672, "lng": -97.7431},
+            {"lat": 30.2500, "lng": -97.7200},
+            {"lat": 30.1975, "lng": -97.6664},
+        ]
+        center_lat, center_lng, zoom = compute_map_view_for_polyline(polyline)
+        self.assertAlmostEqual(center_lat, 30.23235, places=3)
+        self.assertAlmostEqual(center_lng, -97.70475, places=3)
+        self.assertGreaterEqual(zoom, 10)
+        self.assertLessEqual(zoom, 15)
 
     def test_compute_map_view_centers_between_points(self):
         center_lat, center_lng, zoom = compute_map_view(30.2672, -97.7431, 30.1975, -97.6664)

@@ -45,3 +45,33 @@ export function polylineToPath(
     })
     .join(" ");
 }
+
+/** Highest zoom where every polyline point fits inside the viewport. */
+export function computeMapViewForPolyline(
+  polyline: LatLng[],
+  width: number,
+  height: number,
+  margin = 16
+): MapView | null {
+  if (polyline.length === 0 || width <= 0 || height <= 0) return null;
+
+  const lats = polyline.map((point) => point.lat);
+  const lngs = polyline.map((point) => point.lng);
+  const center_lat = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const center_lng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+
+  if (polyline.length === 1) {
+    return { center_lat, center_lng, zoom: 14 };
+  }
+
+  for (let zoom = 18; zoom >= 1; zoom -= 1) {
+    const view = { center_lat, center_lng, zoom };
+    const fits = polyline.every((point) => {
+      const { x, y } = projectLatLng(point, view, width, height);
+      return x >= margin && x <= width - margin && y >= margin && y <= height - margin;
+    });
+    if (fits) return view;
+  }
+
+  return { center_lat, center_lng, zoom: 1 };
+}

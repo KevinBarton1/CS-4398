@@ -19,7 +19,7 @@ def mock_google_routes():
     templates = [
         ("Fastest", "Minimum adjusted time", "#55d6be", 6.9, 14.1),
         ("Balanced", "Weighted time, distance, congestion and demand", "#ffb35c", 7.5, 13.8),
-        ("Low traffic", "Minimum congestion exposure", "#8aa8ff", 8.1, 13.6),
+        ("Low traffic", "Minimum congestion exposure", "#4d72e8", 8.1, 13.6),
     ]
     routes = []
     for index, (name, objective, color, distance, base_eta) in enumerate(templates):

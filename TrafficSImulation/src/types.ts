@@ -15,6 +15,8 @@ export interface RouteOption {
   congestion_score: number; demand_score: number; normalized_score: number;
   segments: Segment[]; factors: PriceFactors; data_source: string;
   polyline: { lat: number; lng: number }[];
+  map_view?: MapView;
+  map_embed_url?: string | null;
 }
 export interface MapView { center_lat: number; center_lng: number; zoom: number; }
 export interface PlanResult {

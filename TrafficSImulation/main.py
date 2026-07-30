@@ -6,9 +6,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.models import PlanRequest
+from app.api.models import MapEmbedRequest, PlanRequest
 from app.api.routes import plan_route
 from app.config import GOOGLE_MAPS_API_KEY
+from app.map.google_embed import build_map_embed_url
 from app.map.google_startup_check import get_startup_status, run_startup_check
 
 ROOT = Path(__file__).resolve().parent
@@ -48,6 +49,14 @@ def plan(request: PlanRequest):
         return plan_route(request.model_dump())
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post("/api/map/embed")
+def map_embed(request: MapEmbedRequest):
+    url = build_map_embed_url(request.center_lat, request.center_lng, request.zoom)
+    if not url:
+        raise HTTPException(status_code=400, detail="GOOGLE_MAPS_API_KEY is not configured.")
+    return {"map_embed_url": url}
 
 
 if STATIC.exists():

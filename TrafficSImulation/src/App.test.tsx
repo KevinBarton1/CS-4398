@@ -26,6 +26,8 @@ const result = {
       { lat: 30.2300, lng: -97.6900 },
       { lat: 30.1975, lng: -97.6664 },
     ],
+    map_view: { center_lat: 30.2324, center_lng: -97.7048, zoom: 12 },
+    map_embed_url: "https://www.google.com/maps/embed/v1/view?key=test&center=30.2324,-97.7048&zoom=12&maptype=roadmap",
   }]
 };
 
@@ -40,14 +42,24 @@ result.routes.push(
     ...result.routes[0],
     id: "route-3",
     name: "Low traffic",
-    color: "#8aa8ff",
+    color: "#4d72e8",
   }
 );
 
-vi.stubGlobal("fetch", vi.fn(async () => ({
-  ok: true,
-  json: async () => result
-})));
+vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+  const url = String(input);
+  if (url.includes("/api/map/embed")) {
+    const body = JSON.parse(String(init?.body ?? "{}"));
+    return {
+      ok: true,
+      json: async () => ({
+        map_embed_url:
+          `https://www.google.com/maps/embed/v1/view?key=test&center=${body.center_lat},${body.center_lng}&zoom=${body.zoom}&maptype=roadmap`,
+      }),
+    };
+  }
+  return { ok: true, json: async () => result };
+}));
 
 test("renders the required hierarchy and API results", async () => {
   const { container } = render(<App />);
@@ -58,7 +70,9 @@ test("renders the required hierarchy and API results", async () => {
   await waitFor(() => expect(screen.getAllByText("$31.11")).toHaveLength(4));
   expect(screen.getByRole("heading", { name: "Fastest" })).toBeInTheDocument();
   expect(screen.getByText("Riverside Dr")).toBeInTheDocument();
-  expect(screen.getByTitle("Map from Downtown Austin to Austin Airport")).toBeInTheDocument();
+  await waitFor(() =>
+    expect(screen.getByTitle("Map from Downtown Austin to Austin Airport")).toBeInTheDocument()
+  );
   expect(container.querySelector(".route-overlay")).toBeInTheDocument();
   expect(container.querySelector(".roads")).not.toBeInTheDocument();
   expect(container.querySelector(".water")).not.toBeInTheDocument();

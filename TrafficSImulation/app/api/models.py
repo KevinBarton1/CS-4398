@@ -14,6 +14,12 @@ class PlanRequest(BaseModel):
     demand: int = Field(default=68, ge=0, le=100)
 
 
+class MapEmbedRequest(BaseModel):
+    center_lat: float = Field(ge=-90, le=90)
+    center_lng: float = Field(ge=-180, le=180)
+    zoom: int = Field(ge=1, le=18)
+
+
 @dataclass
 class RoadSegment:
     name: str

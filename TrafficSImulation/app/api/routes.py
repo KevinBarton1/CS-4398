@@ -1,6 +1,6 @@
 from app.api.models import RouteOption
 from app.config import ROUTE_SCORE_WEIGHTS
-from app.map.google_embed import build_map_embed_url, compute_map_view
+from app.map.google_embed import build_map_embed_url, compute_map_view_for_polyline
 from app.map.service import build_route_options
 from app.pricing.model import estimate_price
 from app.simulation.traffic import create_segments, time_of_day_factor
@@ -48,19 +48,12 @@ def plan_route(payload):
         # Reference mode uses traffic-aware Google routing when configured.
         congestion, demand, weather_level = 44, 52, 0
 
-    origin_name, destination_name, raw_routes, origin_place, destination_place = build_route_options(
+    origin_name, destination_name, raw_routes, _, _ = build_route_options(
         payload.get("origin"),
         payload.get("destination"),
         hour=hour,
         use_traffic=mode == "realtime",
     )
-    center_lat, center_lng, zoom = compute_map_view(
-        origin_place.latitude,
-        origin_place.longitude,
-        destination_place.latitude,
-        destination_place.longitude,
-    )
-    map_embed_url = build_map_embed_url(center_lat, center_lng, zoom)
     weather = weather_adjustment(weather_level)
     time_factor = time_of_day_factor(hour)
     routes = []
@@ -75,6 +68,8 @@ def plan_route(payload):
             route["distance_miles"], adjusted_eta_raw, route_congestion, demand,
             weather["price_multiplier"], time_factor,
         )
+        polyline = route.get("polyline") or []
+        center_lat, center_lng, zoom = compute_map_view_for_polyline(polyline)
         option = RouteOption(
             id=route["id"], name=route["name"], color=route["color"],
             distance_miles=route["distance_miles"], base_eta_minutes=route["base_eta_minutes"],
@@ -82,9 +77,16 @@ def plan_route(payload):
             congestion_score=route_congestion, demand_score=demand,
             objective=route["objective"], normalized_score=0,
             segments=segments, factors=factors, data_source=_route_data_source(mode),
-            polyline=route.get("polyline") or [],
+            polyline=polyline,
         )
-        routes.append(option.to_dict())
+        route_dict = option.to_dict()
+        route_dict["map_view"] = {
+            "center_lat": center_lat,
+            "center_lng": center_lng,
+            "zoom": zoom,
+        }
+        route_dict["map_embed_url"] = build_map_embed_url(center_lat, center_lng, zoom)
+        routes.append(route_dict)
 
     maxima = {
         "time": max(item["adjusted_eta_minutes"] for item in routes),
@@ -105,10 +107,6 @@ def plan_route(payload):
         "weather": weather, "hour": hour, "congestion": congestion, "demand": demand,
         "routes": routes, "recommended_route_id": recommended["id"],
         "notice": _plan_notice(mode),
-        "map_embed_url": map_embed_url,
-        "map_view": {
-            "center_lat": center_lat,
-            "center_lng": center_lng,
-            "zoom": zoom,
-        },
+        "map_embed_url": recommended["map_embed_url"],
+        "map_view": recommended["map_view"],
     }

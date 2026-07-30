@@ -42,6 +42,8 @@ def test_typed_plan_endpoint(_mock_build):
     assert "map_view" in result
     assert "center_lat" in result["map_view"]
     assert all("polyline" in route for route in result["routes"])
+    assert all("map_view" in route for route in result["routes"])
+    assert all("map_embed_url" in route for route in result["routes"])
 
 
 def test_out_of_range_scenario_is_rejected():
@@ -51,3 +53,17 @@ def test_out_of_range_scenario_is_rejected():
         "weather": 99,
     })
     assert response.status_code == 422
+
+
+@patch("app.map.google_embed.GOOGLE_MAPS_API_KEY", "test-key")
+def test_map_embed_endpoint():
+    response = client.post("/api/map/embed", json={
+        "center_lat": 30.2324,
+        "center_lng": -97.7048,
+        "zoom": 13,
+    })
+    assert response.status_code == 200
+    body = response.json()
+    assert body["map_embed_url"].startswith("https://www.google.com/maps/embed/v1/view")
+    assert "center=30.2324%2C-97.7048" in body["map_embed_url"]
+    assert "zoom=13" in body["map_embed_url"]

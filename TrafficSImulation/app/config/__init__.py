@@ -29,7 +29,7 @@ ROUTE_SCORE_WEIGHTS = {
     "demand": 0.15,
 }
 
-ROUTE_COLORS = ["#55d6be", "#ffb35c", "#8aa8ff"]
+ROUTE_COLORS = ["#55d6be", "#ffb35c", "#4d72e8"]
 
 GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
 GOOGLE_PLACES_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
