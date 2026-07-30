@@ -69,14 +69,6 @@ export function Analysis({ route, recommended, mode, scenario, setScenario, onRe
             <span>Base ETA</span>
             <b>{route.base_eta_minutes} min</b>
           </div>
-          <div>
-            <span>Congestion</span>
-            <b>{route.congestion_score}/100</b>
-          </div>
-          <div>
-            <span>Demand</span>
-            <b>{route.demand_score}/100</b>
-          </div>
         </div>
       </section>
 
@@ -88,10 +80,6 @@ export function Analysis({ route, recommended, mode, scenario, setScenario, onRe
         <strong>${route.estimated_price.toFixed(2)}</strong>
         <div className="factors">
           <span>Route ${factors.route_subtotal.toFixed(2)}</span>
-          <span>Demand ×{factors.demand_multiplier.toFixed(2)}</span>
-          <span>Traffic ×{factors.traffic_multiplier.toFixed(2)}</span>
-          <span>Weather ×{factors.weather_multiplier.toFixed(2)}</span>
-          <span>Time ×{factors.time_multiplier.toFixed(2)}</span>
         </div>
         <p>Illustrative estimate only. Not an official Uber or Lyft fare.</p>
       </section>
