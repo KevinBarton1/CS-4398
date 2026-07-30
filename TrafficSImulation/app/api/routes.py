@@ -58,6 +58,8 @@ def plan_route(payload):
         hour=hour,
         use_traffic=mode == "realtime",
     )
+    if mode == "realtime":
+        raw_routes = raw_routes[:1]
     weather = weather_adjustment(weather_level)
     time_factor = time_of_day_factor(hour)
     routes = []

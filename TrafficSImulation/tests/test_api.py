@@ -44,6 +44,25 @@ def test_typed_plan_endpoint(_mock_build):
     assert all("polyline" in route for route in result["routes"])
     assert all("map_view" in route for route in result["routes"])
     assert all("map_embed_url" in route for route in result["routes"])
+    assert "directions_embed_url" not in result
+
+
+@patch("app.map.google_embed.GOOGLE_MAPS_API_KEY", "test-key")
+@patch("app.api.routes.build_route_options", side_effect=mock_build_route_options)
+def test_realtime_plan_returns_single_route_and_directions_embed(_mock_build):
+    response = client.post("/api/plan", json={
+        "origin": "Downtown Austin",
+        "destination": "Austin Airport",
+        "mode": "realtime",
+    })
+    assert response.status_code == 200
+    result = response.json()
+    assert result["mode"] == "realtime"
+    assert len(result["routes"]) == 1
+    assert result["directions_embed_url"].startswith("https://www.google.com/maps/embed/v1/directions")
+    assert "origin=Downtown+Austin" in result["directions_embed_url"]
+    assert "destination=Austin+Airport" in result["directions_embed_url"]
+    assert "Real-Time mode" in result["notice"]
 
 
 def test_out_of_range_scenario_is_rejected():

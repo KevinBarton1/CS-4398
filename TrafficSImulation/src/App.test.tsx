@@ -1,9 +1,9 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { App } from "./App";
 
-const result = {
+const simulatedResult = {
   origin: "Downtown Austin", destination: "Austin Airport", mode: "simulated",
   hour: 17, congestion: 56, demand: 68, recommended_route_id: "route-1",
   notice: "Simulated planning estimate.",
@@ -31,20 +31,29 @@ const result = {
   }]
 };
 
-result.routes.push(
+simulatedResult.routes.push(
   {
-    ...result.routes[0],
+    ...simulatedResult.routes[0],
     id: "route-2",
     name: "Balanced",
     color: "#ffb35c",
   },
   {
-    ...result.routes[0],
+    ...simulatedResult.routes[0],
     id: "route-3",
     name: "Low traffic",
     color: "#4d72e8",
   }
 );
+
+const realtimeResult = {
+  ...simulatedResult,
+  mode: "realtime",
+  routes: [simulatedResult.routes[0]],
+  directions_embed_url:
+    "https://www.google.com/maps/embed/v1/directions?key=test&origin=Downtown+Austin&destination=Austin+Airport&mode=driving",
+  notice: "Real-Time mode: route, distance, and travel time from Google Maps with traffic-aware routing.",
+};
 
 vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo, init?: RequestInit) => {
   const url = String(input);
@@ -58,7 +67,11 @@ vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo, init?: RequestInit) => {
       }),
     };
   }
-  return { ok: true, json: async () => result };
+  const body = init?.body ? JSON.parse(String(init.body)) : {};
+  if (body.mode === "realtime") {
+    return { ok: true, json: async () => realtimeResult };
+  }
+  return { ok: true, json: async () => simulatedResult };
 }));
 
 test("renders the required hierarchy and API results", async () => {
@@ -67,7 +80,9 @@ test("renders the required hierarchy and API results", async () => {
   expect(screen.getByLabelText("Starting point")).toBeInTheDocument();
   expect(screen.getByLabelText("Destination or zone")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Simulated" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Real-Time" })).toBeInTheDocument();
   await waitFor(() => expect(screen.getAllByText("$31.11")).toHaveLength(4));
+  expect(screen.getByRole("button", { name: /Plan Route/ })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Fastest" })).toBeInTheDocument();
   expect(screen.getByText("Riverside Dr")).toBeInTheDocument();
   await waitFor(() =>
@@ -77,4 +92,27 @@ test("renders the required hierarchy and API results", async () => {
   expect(screen.getByRole("button", { name: "View all" })).toBeInTheDocument();
   expect(container.querySelector(".roads")).not.toBeInTheDocument();
   expect(container.querySelector(".water")).not.toBeInTheDocument();
+});
+
+test("realtime mode shows directions map and disables simulation controls", async () => {
+  const { container } = render(<App />);
+  await waitFor(() => expect(screen.getByRole("heading", { name: "Fastest" })).toBeInTheDocument());
+
+  fireEvent.click(screen.getByRole("button", { name: "Real-Time" }));
+
+  await waitFor(() =>
+    expect(
+      screen.getByTitle("Real-time directions from Downtown Austin to Austin Airport")
+    ).toBeInTheDocument()
+  );
+  expect(container.querySelector(".map-shell.realtime")).toBeInTheDocument();
+  expect(container.querySelector(".route-overlay")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "View all" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Real-Time" })).toHaveClass("active");
+  expect(container.querySelector(".source")).toHaveTextContent("Real-Time");
+  expect(screen.getByText("Route comparison is available in Simulated mode.")).toBeInTheDocument();
+  expect(screen.getByText("Scenario controls are available in Simulated mode.")).toBeInTheDocument();
+
+  const sliders = screen.getAllByRole("slider");
+  sliders.forEach((slider) => expect(slider).toBeDisabled());
 });

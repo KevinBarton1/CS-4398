@@ -3,7 +3,12 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from app.api.routes import plan_route
-from app.map.google_embed import build_map_embed_url, compute_map_view, compute_map_view_for_polyline
+from app.map.google_embed import (
+    build_directions_embed_url,
+    build_map_embed_url,
+    compute_map_view,
+    compute_map_view_for_polyline,
+)
 from app.map.google_errors import format_google_api_error
 from app.map.google_places import resolve_place
 from app.map.google_routes import compute_route_options
@@ -243,6 +248,19 @@ class GoogleEmbedTests(unittest.TestCase):
     @patch("app.map.google_embed.GOOGLE_MAPS_API_KEY", "")
     def test_build_map_embed_url_without_key_returns_none(self):
         self.assertIsNone(build_map_embed_url(30.0, -97.0, 12))
+
+    @patch("app.map.google_embed.GOOGLE_MAPS_API_KEY", "test-key")
+    def test_build_directions_embed_url_uses_directions_mode(self):
+        url = build_directions_embed_url("Downtown Austin", "Austin Airport")
+        self.assertIn("https://www.google.com/maps/embed/v1/directions?", url)
+        self.assertIn("key=test-key", url)
+        self.assertIn("origin=Downtown+Austin", url)
+        self.assertIn("destination=Austin+Airport", url)
+        self.assertIn("mode=driving", url)
+
+    @patch("app.map.google_embed.GOOGLE_MAPS_API_KEY", "")
+    def test_build_directions_embed_url_without_key_returns_none(self):
+        self.assertIsNone(build_directions_embed_url("A", "B"))
 
 
 if __name__ == "__main__":
