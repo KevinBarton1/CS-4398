@@ -1,4 +1,3 @@
-import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -7,7 +6,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.console_log import ApiResponseLoggerMiddleware
 from app.api.models import PlanRequest
 from app.api.routes import plan_route
 from app.config import GOOGLE_MAPS_API_KEY
@@ -21,15 +19,6 @@ PORT = 8000
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     status = run_startup_check()
-    print("\n--- GET /api/health (startup) ---")
-    print(json.dumps({
-        "status": "ok",
-        "service": "TrafficScope",
-        "version": "1.1",
-        "google_maps_configured": bool(GOOGLE_MAPS_API_KEY),
-        "google_maps": status,
-    }, indent=2))
-    print("--- end ---\n")
     if status["configured"] and not status["ok"]:
         print("Google Maps is required. Route planning will fail until Places and Routes APIs are reachable.")
     yield
@@ -41,8 +30,6 @@ app = FastAPI(
     description="Typed controller for the distributed traffic and rideshare planning simulation.",
     lifespan=lifespan,
 )
-app.add_middleware(ApiResponseLoggerMiddleware)
-
 @app.get("/api/health")
 def health():
     google_maps = get_startup_status()

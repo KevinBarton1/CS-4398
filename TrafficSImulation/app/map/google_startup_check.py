@@ -1,5 +1,3 @@
-import json
-
 import httpx
 
 from app.config import (
@@ -13,15 +11,6 @@ from app.map.google_places import search_place
 from app.map.types import ResolvedPlace
 
 _STARTUP_STATUS: dict | None = None
-
-
-def _print_api_response(label: str, response: httpx.Response) -> None:
-    print(f"\n--- {label} -> {response.status_code} ---")
-    try:
-        print(json.dumps(response.json(), indent=2))
-    except ValueError:
-        print(response.text.strip()[:2000])
-    print("--- end ---\n")
 
 
 def _places_probe() -> tuple[bool, str]:
@@ -41,7 +30,6 @@ def _places_probe() -> tuple[bool, str]:
             },
             timeout=10.0,
         )
-        _print_api_response("Google Places API", response)
         if response.status_code != 200:
             detail = response.text.strip().replace("\n", " ")[:240]
             return False, f"Places API HTTP {response.status_code}: {detail}"
@@ -86,7 +74,6 @@ def _routes_probe(origin: ResolvedPlace, destination: ResolvedPlace) -> tuple[bo
             },
             timeout=10.0,
         )
-        _print_api_response("Google Routes API", response)
         if response.status_code != 200:
             detail = response.text.strip().replace("\n", " ")[:240]
             return False, f"Routes API HTTP {response.status_code}: {detail}"
