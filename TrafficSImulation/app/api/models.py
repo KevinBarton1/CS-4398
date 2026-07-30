@@ -44,6 +44,7 @@ class RouteOption:
     segments: List[RoadSegment]
     factors: dict
     data_source: str
+    polyline: List[dict]
 
     def to_dict(self):
         return asdict(self)

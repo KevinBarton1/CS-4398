@@ -11,6 +11,7 @@ from app.config import (
     ROUTE_COLORS,
 )
 from app.map.google_errors import format_google_api_error
+from app.map.polyline import decode_polyline
 from app.map.types import ResolvedPlace
 
 
@@ -92,6 +93,9 @@ def _build_route_option(index: int, route: dict) -> dict:
     duration_seconds = _parse_duration_seconds(route.get("duration"))
     base_seconds = static_seconds or duration_seconds or 0
 
+    encoded_polyline = (route.get("polyline") or {}).get("encodedPolyline") or ""
+    polyline = decode_polyline(encoded_polyline) if encoded_polyline else []
+
     return {
         "id": f"route-{index + 1}",
         "name": ROUTE_NAMES[index] if index < len(ROUTE_NAMES) else f"Route {index + 1}",
@@ -103,6 +107,7 @@ def _build_route_option(index: int, route: dict) -> dict:
         "google_steps": steps,
         "google_duration_seconds": duration_seconds,
         "google_static_duration_seconds": static_seconds,
+        "polyline": polyline,
         "map_source": "google",
     }
 

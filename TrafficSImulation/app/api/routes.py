@@ -82,6 +82,7 @@ def plan_route(payload):
             congestion_score=route_congestion, demand_score=demand,
             objective=route["objective"], normalized_score=0,
             segments=segments, factors=factors, data_source=_route_data_source(mode),
+            polyline=route.get("polyline") or [],
         )
         routes.append(option.to_dict())
 
@@ -105,4 +106,9 @@ def plan_route(payload):
         "routes": routes, "recommended_route_id": recommended["id"],
         "notice": _plan_notice(mode),
         "map_embed_url": map_embed_url,
+        "map_view": {
+            "center_lat": center_lat,
+            "center_lng": center_lng,
+            "zoom": zoom,
+        },
     }
