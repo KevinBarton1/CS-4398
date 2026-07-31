@@ -7,7 +7,8 @@ from app.map.google_embed import (
 )
 from app.map.service import build_route_options
 from app.pricing.model import estimate_price
-from app.simulation.traffic import create_segments, time_of_day_factor
+from app.simulation.legacy_segments import create_segments
+from app.simulation.traffic import time_of_day_factor
 from app.weather.service import weather_adjustment
 
 
