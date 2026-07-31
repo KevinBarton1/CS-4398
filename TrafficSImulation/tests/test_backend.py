@@ -2,7 +2,7 @@ import httpx
 import unittest
 from unittest.mock import MagicMock, patch
 
-from app.api.routes import plan_route
+from app.api.legacy_routes import plan_route
 from app.map.google_embed import (
     build_directions_embed_url,
     build_map_embed_url,
@@ -18,7 +18,7 @@ from app.simulation.traffic import bpr_adjusted_time
 from tests.google_mocks import mock_build_route_options, mock_google_routes
 
 
-@patch("app.api.routes.build_route_options", side_effect=mock_build_route_options)
+@patch("app.api.legacy_routes.build_route_options", side_effect=mock_build_route_options)
 class RoutePlanningTests(unittest.TestCase):
     def setUp(self):
         self.payload = {
@@ -44,7 +44,7 @@ class RoutePlanningTests(unittest.TestCase):
         self.assertGreater(severe["adjusted_eta_minutes"], clear["adjusted_eta_minutes"])
 
     def test_invalid_location_is_rejected(self, _mock_build):
-        with patch("app.api.routes.build_route_options", side_effect=ValueError('Could not geocode "Mars Colony" using Google Places.')):
+        with patch("app.api.legacy_routes.build_route_options", side_effect=ValueError('Could not geocode "Mars Colony" using Google Places.')):
             with self.assertRaisesRegex(ValueError, "Could not geocode"):
                 plan_route({**self.payload, "destination": "Mars Colony"})
 

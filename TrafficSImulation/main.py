@@ -1,81 +1,103 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import httpx
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.legacy_models import MapEmbedRequest
-from app.api.models import PlanRequest
-from app.api.routes import plan_route
-from app.config import GOOGLE_MAPS_API_KEY
-from app.map.google_embed import build_map_embed_url
-from app.map.google_startup_check import get_startup_status, run_startup_check
+from app.api.errors import register_exception_handlers
+from app.api.routes import router
+from app.config import settings
+from app.map.health import GoogleApiProbe, ProbeResult
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "dist"
 PORT = 8000
+logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(_: FastAPI):
-    status = run_startup_check()
-    if status["configured"] and not status["ok"]:
-        print("Google Maps is required. Route planning will fail until Places and Routes APIs are reachable.")
-    yield
+def create_app(
+    *,
+    app_settings=None,
+    http_client: httpx.AsyncClient | None = None,
+    probe_result: ProbeResult | None = None,
+    static_dir: Path | None = None,
+) -> FastAPI:
+    resolved_settings = app_settings or settings
+    dist = static_dir if static_dir is not None else STATIC
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        owns_client = http_client is None
+        client = http_client or httpx.AsyncClient()
+        app.state.http_client = client
+        app.state.settings = resolved_settings
+        if probe_result is not None:
+            app.state.probe_result = probe_result
+        else:
+            probe = GoogleApiProbe(resolved_settings, client)
+            result = await probe.check()
+            app.state.probe_result = result
+            if not result.ok and resolved_settings.google_maps_configured:
+                logger.warning("Google API probe failed: %s", result.message)
+        try:
+            yield
+        finally:
+            if owns_client:
+                await client.aclose()
+
+    application = FastAPI(
+        title="TrafficScope API",
+        version="2.0",
+        description=(
+            "Typed controller for the distributed traffic and "
+            "rideshare planning simulation."
+        ),
+        lifespan=lifespan,
+    )
+    register_exception_handlers(application)
+    application.include_router(router)
+    _mount_static(application, dist)
+    return application
 
 
-app = FastAPI(
-    title="TrafficScope API",
-    version="1.1.0",
-    description="Typed controller for the distributed traffic and rideshare planning simulation.",
-    lifespan=lifespan,
-)
-@app.get("/api/health")
-def health():
-    google_maps = get_startup_status()
-    return {
-        "status": "ok",
-        "service": "TrafficScope",
-        "version": "1.1",
-        "google_maps_configured": bool(GOOGLE_MAPS_API_KEY),
-        "google_maps": google_maps,
-    }
+def _mount_static(app: FastAPI, dist: Path) -> None:
+    if not dist.exists():
+        logger.warning(
+            "Frontend build missing at %s. Run `npm install` and `npm run build`.",
+            dist,
+        )
+        return
 
+    assets = dist / "assets"
+    if assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets), name="assets")
 
-@app.post("/api/plan")
-def plan(request: PlanRequest):
-    try:
-        return plan_route(request.model_dump())
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-
-
-@app.post("/api/map/embed")
-def map_embed(request: MapEmbedRequest):
-    url = build_map_embed_url(request.center_lat, request.center_lng, request.zoom)
-    if not url:
-        raise HTTPException(status_code=400, detail="GOOGLE_MAPS_API_KEY is not configured.")
-    return {"map_embed_url": url}
-
-
-@app.get("/api/map/config")
-def map_config():
-    if not GOOGLE_MAPS_API_KEY:
-        raise HTTPException(status_code=400, detail="GOOGLE_MAPS_API_KEY is not configured.")
-    return {"maps_api_key": GOOGLE_MAPS_API_KEY}
-
-
-if STATIC.exists():
-    app.mount("/assets", StaticFiles(directory=STATIC / "assets"), name="assets")
+    dist_resolved = dist.resolve()
 
     @app.get("/{path:path}")
-    def spa(path: str):
-        candidate = (STATIC / path).resolve()
-        if path and STATIC.resolve() in candidate.parents and candidate.is_file():
+    async def spa(path: str):
+        if not path:
+            return FileResponse(dist / "index.html")
+
+        if ".." in Path(path).parts:
+            raise HTTPException(status_code=404, detail="Not found")
+
+        candidate = (dist / path).resolve()
+        try:
+            candidate.relative_to(dist_resolved)
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Not found") from None
+
+        if candidate.is_file():
             return FileResponse(candidate)
-        return FileResponse(STATIC / "index.html")
+        return FileResponse(dist / "index.html")
+
+
+app = create_app()
 
 
 def main():

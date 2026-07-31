@@ -11,7 +11,6 @@ from app.api.models import (
     ValidationField,
     WeatherState,
 )
-from app.api.routes import plan_route
 
 __all__ = [
     "ErrorResponse",
@@ -25,5 +24,4 @@ __all__ = [
     "Scenario",
     "ValidationField",
     "WeatherState",
-    "plan_route",
 ]
