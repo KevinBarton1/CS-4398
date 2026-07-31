@@ -99,6 +99,7 @@ export function App() {
               viewAll={viewAll}
               onToggleViewAll={toggleViewAll}
               selectedRoute={selectedRoute}
+              onSelectRoute={selectRoute}
             />
           </MapConfigProvider>
         </section>

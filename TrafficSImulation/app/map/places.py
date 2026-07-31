@@ -14,6 +14,8 @@ from app.map.errors import (
     UpstreamTimeoutError,
     UpstreamUnavailableError,
 )
+from app.map.place_cache import PlaceResolutionCache
+from app.map.retry import with_upstream_retry
 from app.map.types import ResolvedPlace
 
 
@@ -22,9 +24,11 @@ class GooglePlacesGateway:
         self,
         settings: Settings,
         client: httpx.AsyncClient,
+        cache: PlaceResolutionCache | None = None,
     ) -> None:
         self._settings = settings
         self._client = client
+        self._cache = cache
 
     async def resolve(self, query: str) -> ResolvedPlace:
         if not self._settings.google_maps_configured:
@@ -34,23 +38,25 @@ class GooglePlacesGateway:
         if not normalized_query:
             raise InvalidLocationError(query)
 
+        if self._cache is not None:
+            cached = self._cache.get(normalized_query)
+            if cached is not None:
+                return cached
+
+        place = await self._resolve_from_upstream(normalized_query, query)
+        if self._cache is not None:
+            self._cache.set(normalized_query, place)
+        return place
+
+    async def _resolve_from_upstream(
+        self,
+        normalized_query: str,
+        original_query: str,
+    ) -> ResolvedPlace:
         try:
-            response = await self._client.post(
-                GOOGLE_PLACES_SEARCH_URL,
-                json={
-                    "textQuery": normalized_query,
-                    "regionCode": GOOGLE_REGION_CODE,
-                    "locationBias": AUSTIN_LOCATION_BIAS,
-                    "maxResultCount": 1,
-                },
-                headers={
-                    "Content-Type": "application/json",
-                    "X-Goog-Api-Key": self._settings.google_maps_api_key,
-                    "X-Goog-FieldMask": GOOGLE_PLACES_FIELD_MASK,
-                },
-                timeout=PLACES_TIMEOUT_SECONDS,
+            response = await with_upstream_retry(
+                lambda: self._post_places_request(normalized_query)
             )
-            response.raise_for_status()
         except httpx.TimeoutException as error:
             raise UpstreamTimeoutError("Places") from error
         except httpx.HTTPError as error:
@@ -65,7 +71,7 @@ class GooglePlacesGateway:
             raise UpstreamUnavailableError("Places") from error
 
         if not places:
-            raise InvalidLocationError(query)
+            raise InvalidLocationError(original_query)
         if not isinstance(places, list) or not isinstance(places[0], dict):
             raise UpstreamUnavailableError("Places")
 
@@ -78,7 +84,7 @@ class GooglePlacesGateway:
             raise UpstreamUnavailableError("Places") from error
 
         if latitude is None or longitude is None:
-            raise InvalidLocationError(query)
+            raise InvalidLocationError(original_query)
 
         try:
             display_name = place.get("displayName") or {}
@@ -96,3 +102,22 @@ class GooglePlacesGateway:
             )
         except (TypeError, ValueError) as error:
             raise UpstreamUnavailableError("Places") from error
+
+    async def _post_places_request(self, normalized_query: str) -> httpx.Response:
+        response = await self._client.post(
+            GOOGLE_PLACES_SEARCH_URL,
+            json={
+                "textQuery": normalized_query,
+                "regionCode": GOOGLE_REGION_CODE,
+                "locationBias": AUSTIN_LOCATION_BIAS,
+                "maxResultCount": 1,
+            },
+            headers={
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": self._settings.google_maps_api_key,
+                "X-Goog-FieldMask": GOOGLE_PLACES_FIELD_MASK,
+            },
+            timeout=PLACES_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        return response

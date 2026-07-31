@@ -18,6 +18,7 @@ from app.map.errors import (
     UpstreamUnavailableError,
 )
 from app.map.polyline import decode_polyline
+from app.map.retry import with_upstream_retry
 from app.map.types import (
     RawRoute,
     ResolvedPlace,
@@ -48,27 +49,14 @@ class GoogleRoutesGateway:
             raise MapsNotConfiguredError
 
         try:
-            response = await self._client.post(
-                GOOGLE_ROUTES_COMPUTE_URL,
-                json={
-                    "origin": _waypoint(origin),
-                    "destination": _waypoint(destination),
-                    "travelMode": "DRIVE",
-                    "computeAlternativeRoutes": alternatives,
-                    "routingPreference": "TRAFFIC_AWARE",
-                    "units": "IMPERIAL",
-                    "regionCode": GOOGLE_REGION_CODE,
-                    "departureTime": _format_departure(departure),
-                    "extraComputations": ["TRAFFIC_ON_POLYLINE"],
-                },
-                headers={
-                    "Content-Type": "application/json",
-                    "X-Goog-Api-Key": self._settings.google_maps_api_key,
-                    "X-Goog-FieldMask": GOOGLE_ROUTES_FIELD_MASK,
-                },
-                timeout=ROUTES_TIMEOUT_SECONDS,
+            response = await with_upstream_retry(
+                lambda: self._post_routes_request(
+                    origin,
+                    destination,
+                    departure,
+                    alternatives,
+                )
             )
-            response.raise_for_status()
         except httpx.TimeoutException as error:
             raise UpstreamTimeoutError("Routes") from error
         except httpx.HTTPError as error:
@@ -96,6 +84,36 @@ class GoogleRoutesGateway:
             ]
         except (AttributeError, TypeError, ValueError) as error:
             raise UpstreamUnavailableError("Routes") from error
+
+    async def _post_routes_request(
+        self,
+        origin: ResolvedPlace,
+        destination: ResolvedPlace,
+        departure: datetime,
+        alternatives: bool,
+    ) -> httpx.Response:
+        response = await self._client.post(
+            GOOGLE_ROUTES_COMPUTE_URL,
+            json={
+                "origin": _waypoint(origin),
+                "destination": _waypoint(destination),
+                "travelMode": "DRIVE",
+                "computeAlternativeRoutes": alternatives,
+                "routingPreference": "TRAFFIC_AWARE",
+                "units": "IMPERIAL",
+                "regionCode": GOOGLE_REGION_CODE,
+                "departureTime": _format_departure(departure),
+                "extraComputations": ["TRAFFIC_ON_POLYLINE"],
+            },
+            headers={
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": self._settings.google_maps_api_key,
+                "X-Goog-FieldMask": GOOGLE_ROUTES_FIELD_MASK,
+            },
+            timeout=ROUTES_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        return response
 
 
 def _waypoint(place: ResolvedPlace) -> dict[str, object]:

@@ -8,7 +8,8 @@ test, so that nothing is specified without an owner and nothing is claimed witho
 
 **Progress convention:** P1 rows verified in Prompt 22 (2026-07-31) are marked `Complete` when their
 planned tests pass. Harness-only or deployment rows remain `Deferred` or `Partial` with the reason in
-the Progress cell. P2 and P3 rows stay `Not started` until their phase prompts land. Do not mark a row
+the Progress cell. P2 rows verified in Prompt 23 (2026-07-31) are marked `Complete` when their planned
+tests pass. P3 rows stay `Not started` until prompt 24 lands. Do not mark a row
 complete without a passing planned test.
 
 Test levels:
@@ -33,7 +34,7 @@ Test levels:
 | FR-1.5 | [../controller/validation-error-handling.md](../controller/validation-error-handling.md) | P1 | An unresolvable location returns `400` with `invalid_location` | T-04 | Complete |
 | FR-1.6 | [../controller/orchestration.md](../controller/orchestration.md) | P1 | Identical resolutions return `400` with `same_origin_destination` | T-05 | Complete |
 | FR-1.7 | [../controller/api-contracts.md](../controller/api-contracts.md) | P1 | The response echoes resolved display names | T-01 | Complete |
-| FR-1.8 | [../model/route-planning.md](../model/route-planning.md) | P2 | A scenario-only re-plan issues no new Places request | T-47 | Not started |
+| FR-1.8 | [../model/route-planning.md](../model/route-planning.md) | P2 | A scenario-only re-plan issues no new Places request | T-47 | Complete |
 | FR-1.9 | — | — | Out of scope | — | Not planned |
 | FR-1.10 | — | — | Out of scope | — | Not planned |
 | FR-2.1 | [../model/google-integrations.md](../model/google-integrations.md) | P1 | Alternatives come from `computeRoutes` server-side | T-21, T-01 | Complete |
@@ -46,7 +47,7 @@ Test levels:
 | FR-2.8 | [../model/route-planning.md](../model/route-planning.md) | P1 | The recommended route has the lowest normalized score | T-17 | Complete |
 | FR-2.9 | [../controller/mode-policies.md](../controller/mode-policies.md) | P1 | `data_source` matches the mode | T-22 | Complete |
 | FR-2.10 | [../view/results-analysis.md](../view/results-analysis.md) | P1 | Selection persists across a re-plan when the id remains | T-29 | Complete |
-| FR-2.11 | [../model/traffic-simulation.md](../model/traffic-simulation.md) | P2 | Segments cover the full step list | T-14 | Not started |
+| FR-2.11 | [../model/traffic-simulation.md](../model/traffic-simulation.md) | P2 | Segments cover the full step list | T-14 | Complete |
 | FR-2.12 | — | — | Out of scope | — | Not planned |
 | FR-2.13 | — | — | Out of scope | — | Not planned |
 | FR-3.1 | [../view/map-rendering.md](../view/map-rendering.md) | P1 | The map is a Maps JavaScript API instance | T-31 | Complete |
@@ -56,8 +57,8 @@ Test levels:
 | FR-3.5 | [../view/map-rendering.md](../view/map-rendering.md) | P1 | Tint applies in Simulated only | T-33 | Complete |
 | FR-3.6 | [../view/map-rendering.md](../view/map-rendering.md) | P1 | Selected route is emphasized | T-32 | Complete |
 | FR-3.7 | [../view/map-rendering.md](../view/map-rendering.md) | P1 | Camera fits selected `bounds`, view-all fits `map_bounds` | T-34 | Complete |
-| FR-3.8 | [../view/map-rendering.md](../view/map-rendering.md) | P2 | Origin and destination markers render with labels | T-48 | Not started |
-| FR-3.9 | [../view/map-rendering.md](../view/map-rendering.md) | P2 | Clicking a polyline selects its route | T-48 | Not started |
+| FR-3.8 | [../view/map-rendering.md](../view/map-rendering.md) | P2 | Origin and destination markers render with labels | T-48 | Complete |
+| FR-3.9 | [../view/map-rendering.md](../view/map-rendering.md) | P2 | Clicking a polyline selects its route | T-48 | Complete |
 | FR-3.10 | — | — | Out of scope | — | Not planned |
 | FR-3.11 | — | — | Out of scope | — | Not planned |
 | FR-4.1 | [../view/app-composition.md](../view/app-composition.md) | P1 | Two mode options with the locked labels | T-28 | Complete |
@@ -92,7 +93,7 @@ Test levels:
 | FR-7.7 | [../view/loading-error-states.md](../view/loading-error-states.md) | P1 | A transport failure shows a connectivity message | T-30 | Complete |
 | FR-7.8 | [../view/loading-error-states.md](../view/loading-error-states.md) | P1 | `upstream_timeout` presents retry guidance | T-09, T-30 | Complete |
 | FR-7.9 | [../controller/validation-error-handling.md](../controller/validation-error-handling.md) | P1 | No body contains a traceback or credential | T-08, T-49 | Complete |
-| FR-7.10 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P2 | One jittered retry before surfacing a transient failure | T-50 | Not started |
+| FR-7.10 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P2 | One jittered retry before surfacing a transient failure | T-50 | Complete |
 | FR-7.11 | — | — | Out of scope | — | Not planned |
 | FR-7.12 | — | — | Out of scope | — | Not planned |
 | FR-8.1 | [../model/heatmaps.md](../model/heatmaps.md) | P3 | `POST /api/heatmap` returns congestion cells | T-41 | Not started |
@@ -113,14 +114,14 @@ Test levels:
 | NFR-1.3 | [../view/app-composition.md](../view/app-composition.md) | P1 | First contentful paint under 2 s on broadband | T-52 | Deferred — T-52 performance harness |
 | NFR-1.4 | [../view/map-rendering.md](../view/map-rendering.md) | P1 | Polyline rebuild blocks the main thread under 100 ms | T-32 | Complete |
 | NFR-1.5 | [../view/app-composition.md](../view/app-composition.md) | P1 | Superseded requests are aborted and discarded | T-27 | Complete |
-| NFR-1.6 | [../model/route-planning.md](../model/route-planning.md) | P2 | Cached place resolution avoids repeat Places calls | T-47 | Not started |
-| NFR-1.7 | [../view/app-composition.md](../view/app-composition.md) | P2 | Bundle under 400 kB gzipped excluding the Maps script | T-53 | Not started |
+| NFR-1.6 | [../model/route-planning.md](../model/route-planning.md) | P2 | Cached place resolution avoids repeat Places calls | T-47 | Complete |
+| NFR-1.7 | [../view/app-composition.md](../view/app-composition.md) | P2 | Bundle under 400 kB gzipped excluding the Maps script | T-53 | Complete |
 | NFR-2.1 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P1 | Places 8 s and Routes 10 s timeouts are applied | T-09, T-21 | Complete |
 | NFR-2.2 | [../controller/validation-error-handling.md](../controller/validation-error-handling.md) | P1 | No unhandled exception or non-envelope body | T-06 through T-09 | Complete |
 | NFR-2.3 | [../view/loading-error-states.md](../view/loading-error-states.md) | P1 | Map failure leaves planning usable | T-31 | Complete |
 | NFR-2.4 | [../controller/api-contracts.md](../controller/api-contracts.md) | P1 | The probe reports status without blocking startup | T-10 | Complete |
 | NFR-2.5 | [../controller/mode-policies.md](../controller/mode-policies.md) | P1 | No substituted data; degraded states are explicit | T-07 | Complete |
-| NFR-2.6 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P2 | One jittered retry on a transient failure | T-50 | Not started |
+| NFR-2.6 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P2 | One jittered retry on a transient failure | T-50 | Complete |
 | NFR-2.7 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P1 | Failed upstream calls log status, latency, and a sanitized error | T-49 | Complete |
 | NFR-3.1 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P1 | The server credential appears in no response or log | T-11, T-49 | Complete |
 | NFR-3.2 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P1 | Only the referrer-restricted browser credential is served | T-11 | Complete |
@@ -129,15 +130,15 @@ Test levels:
 | NFR-3.5 | [../architecture/architecture-overview.md](../architecture/architecture-overview.md) | P1 | Deployment terminates TLS and serves HTTPS only | Manual review | Deferred — manual deployment review |
 | NFR-3.6 | [../controller/validation-error-handling.md](../controller/validation-error-handling.md) | P1 | Error bodies are sanitized | T-08, T-49 | Complete |
 | NFR-3.7 | [../controller/api-contracts.md](../controller/api-contracts.md) | P1 | The fallback route serves only files inside the build output | T-42 | Complete |
-| NFR-3.8 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P2 | Credentials rotate without a code change | T-54 | Not started |
+| NFR-3.8 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P2 | Credentials rotate without a code change | T-54 | Complete |
 | NFR-4.1 | [../view/accessibility.md](../view/accessibility.md) | P1 | WCAG 2.1 AA target documented and reviewed | T-36, T-37 | Complete |
 | NFR-4.2 | [../view/accessibility.md](../view/accessibility.md) | P1 | Every control is keyboard operable with visible focus | T-36 | Complete |
 | NFR-4.3 | [../view/accessibility.md](../view/accessibility.md) | P1 | Map information is duplicated in text | T-39 | Complete |
 | NFR-4.4 | [../view/accessibility.md](../view/accessibility.md) | P1 | Status and errors announce through a polite live region | T-37 | Complete |
 | NFR-4.5 | [../view/accessibility.md](../view/accessibility.md) | P1 | Text contrast at least 4.5 to 1 | T-55 | Partial — contrast subset in src/utils/contrast.test.ts |
 | NFR-4.6 | [../view/accessibility.md](../view/accessibility.md) | P1 | Traffic severity is conveyed in text as well as color | T-39 | Complete |
-| NFR-4.7 | [../view/accessibility.md](../view/accessibility.md) | P2 | Reduced-motion preference honored | T-55 | Not started |
-| NFR-4.8 | [../view/accessibility.md](../view/accessibility.md) | P2 | Automated audit passes with no critical violations | T-55 | Not started |
+| NFR-4.7 | [../view/accessibility.md](../view/accessibility.md) | P2 | Reduced-motion preference honored | T-55 | Complete |
+| NFR-4.8 | [../view/accessibility.md](../view/accessibility.md) | P2 | Automated audit passes with no critical violations | T-55 | Complete |
 | NFR-5.1 | [../architecture/architecture-overview.md](../architecture/architecture-overview.md) | P1 | No Model to Controller import edge | T-45 | Complete |
 | NFR-5.2 | [../controller/orchestration.md](../controller/orchestration.md) | P1 | Orchestration contains no coefficient | T-45 | Complete |
 | NFR-5.3 | [../model/configuration.md](../model/configuration.md) | P1 | All coefficients defined once in `app/config/__init__.py` | T-54 | Complete |
@@ -154,7 +155,7 @@ Test levels:
 | NFR-6.5 | [../view/app-composition.md](../view/app-composition.md) | P1 | React behavior is asserted, not snapshotted | T-25 through T-39 | Complete |
 | NFR-6.6 | [../view/app-composition.md](../view/app-composition.md) | P1 | `npm run build` type-checks clean and gates merges | T-43 | Complete |
 | NFR-6.7 | [../controller/api-contracts.md](../controller/api-contracts.md) | P1 | A contract test pins the response field sets | T-24 | Complete |
-| NFR-6.8 | [../view/app-composition.md](../view/app-composition.md) | P2 | An end-to-end flow covers plan, select, and mode switch | T-44 | Not started |
+| NFR-6.8 | [../view/app-composition.md](../view/app-composition.md) | P2 | An end-to-end flow covers plan, select, and mode switch | T-44 | Complete |
 | NFR-6.9 | [../model/google-integrations.md](../model/google-integrations.md) | P1 | Live-credential tests are opt-in | T-57 | Complete |
 | NFR-7.1 | [../controller/api-contracts.md](../controller/api-contracts.md) | P1 | `notice` is present and displayed | T-01, T-02, T-25 | Complete |
 | NFR-7.2 | [../view/results-analysis.md](../view/results-analysis.md) | P1 | The disclaimer is visible whenever a price shows | T-38 | Complete |

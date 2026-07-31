@@ -1,23 +1,28 @@
 import asyncio
 from unittest.mock import patch
 
+import httpx
 import pytest
 
 from app.api.errors import SameOriginDestinationError
 from app.api.mode_policy import SimulatedModePolicy
 from app.api.models import PlanRequest, RoadSegment, Scenario
 from app.api.planning import PlanningService
+from app.api.dependencies import build_planning_service
 from app.config import (
     ETA_FALLBACK_BUFFER_MINUTES,
     ROUTE_CONGESTION_FLOOR,
     Settings,
 )
+from app.map.place_cache import PlaceResolutionCache
+from app.map.places import GooglePlacesGateway
 from app.map.types import LatLngPoint, RawRoute, ResolvedPlace, RouteBounds
 from app.pricing.model import PricingModel
 from app.simulation.scoring import RouteScorer
 from app.simulation.segments import RoadSegment as SegmentRoadSegment
 from app.simulation.segments import SegmentBuilder
 from app.weather.service import WeatherService
+from tests.google_mocks import make_api_mock_handler, make_mock_async_client
 
 
 def _request(**overrides: object) -> PlanRequest:
@@ -406,3 +411,51 @@ async def test_t23_congestion_score_uses_route_index_step() -> None:
 
     assert [route.congestion_score for route in response.routes] == [56, 47]
     assert all(score >= ROUTE_CONGESTION_FLOOR for score in [56, 47])
+
+
+@pytest.mark.asyncio
+async def test_t47_scenario_only_replan_uses_place_cache() -> None:
+    places_calls = 0
+    base_handler, _ = make_api_mock_handler(route_count=3)
+
+    def counting_handler(request: httpx.Request) -> httpx.Response:
+        nonlocal places_calls
+        if "places.googleapis.com" in str(request.url):
+            places_calls += 1
+        return base_handler(request)
+
+    cache = PlaceResolutionCache()
+    async with make_mock_async_client(counting_handler) as client:
+        service = build_planning_service(
+            client,
+            Settings(google_maps_api_key="test-key"),
+            cache,
+        )
+        await service.plan(_request(congestion=56))
+        assert places_calls == 2
+        await service.plan(_request(congestion=72))
+        assert places_calls == 2
+
+
+@pytest.mark.asyncio
+async def test_t47_place_gateway_cache_prevents_repeat_transport() -> None:
+    base_handler, _ = make_api_mock_handler(route_count=1)
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return base_handler(request)
+
+    cache = PlaceResolutionCache()
+    async with make_mock_async_client(handler) as client:
+        gateway = GooglePlacesGateway(
+            Settings(google_maps_api_key="test-key"),
+            client,
+            cache,
+        )
+        first = await gateway.resolve("Downtown Austin")
+        second = await gateway.resolve("  downtown   austin ")
+
+    assert first.name == second.name
+    assert calls == 1

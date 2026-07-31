@@ -3,6 +3,7 @@ import { trafficSegmentColor } from "../utils/trafficSegmentColor";
 
 export interface DrawablePolyline {
   key: string;
+  routeId: string;
   path: LatLngPoint[];
   color: string;
   opacity: number;
@@ -60,6 +61,7 @@ export function buildDrawablePolylines(
       const end = clamp(interval.end_index, start + 1, route.polyline.length - 1);
       drawable.push({
         key: `${route.id}-${index}-${start}-${end}`,
+        routeId: route.id,
         path,
         color: trafficSegmentColor(interval.speed as TrafficSpeed, congestion, weatherSeverity),
         opacity,

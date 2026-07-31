@@ -101,6 +101,9 @@ def test_documented_constants_match_catalog() -> None:
         "MAP_DEFAULT_ZOOM": 12,
         "MAP_COLOR_SCHEME": "DARK",
         "MAP_LIBRARIES": ["core", "maps"],
+        "UPSTREAM_RETRY_MAX": 1,
+        "UPSTREAM_RETRY_JITTER_MIN_SECONDS": 0.05,
+        "UPSTREAM_RETRY_JITTER_MAX_SECONDS": 0.15,
     }
 
     for name, value in expected.items():
@@ -150,6 +153,19 @@ def test_unset_map_id_defaults_to_none(
     monkeypatch.delenv("GOOGLE_MAPS_MAP_ID", raising=False)
 
     assert Settings().google_maps_map_id is None
+
+
+def test_t54_credentials_rotate_via_environment_without_code_change(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GOOGLE_MAPS_API_KEY", "rotated-server-key")
+    monkeypatch.setenv("GOOGLE_MAPS_BROWSER_API_KEY", "rotated-browser-key")
+
+    configured = Settings()
+
+    assert configured.google_maps_api_key == "rotated-server-key"
+    assert configured.google_maps_browser_api_key == "rotated-browser-key"
+    assert configured.google_maps_configured is True
 
 
 def test_catalog_literals_are_not_redeclared_outside_config() -> None:

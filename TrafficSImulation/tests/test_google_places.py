@@ -160,3 +160,32 @@ async def test_t20_upstream_failures_are_typed_and_sanitized(
     assert getattr(error, "status") == status
     assert credential not in getattr(error, "detail")
     assert upstream_body not in getattr(error, "detail")
+
+
+@pytest.mark.asyncio
+async def test_t50_places_retries_once_on_transient_upstream_failure() -> None:
+    attempts = 0
+    success_payload = {
+        "places": [
+            {
+                "displayName": {"text": "Downtown Austin"},
+                "location": {"latitude": 30.2672, "longitude": -97.7431},
+            }
+        ]
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(503, request=request)
+        return mock_json_response(request, success_payload)
+
+    async with make_mock_async_client(handler) as client:
+        place = await GooglePlacesGateway(
+            Settings(google_maps_api_key="test-server-key"),
+            client,
+        ).resolve("Downtown Austin")
+
+    assert attempts == 2
+    assert place.name == "Downtown Austin"

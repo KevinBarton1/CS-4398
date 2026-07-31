@@ -8,6 +8,7 @@ import {
 import { useMapConfig } from "../hooks/useMapConfig";
 import type { PlanResult, RouteOption, RouteBounds } from "../types";
 import { MapBoundsController } from "./MapBoundsController";
+import { RouteEndpointMarkers } from "./RouteEndpointMarkers";
 import { RoutePolylineLayer } from "./RoutePolylineLayer";
 import type { ApiError } from "../types";
 import { StatusBanner } from "./StatusBanner";
@@ -22,6 +23,7 @@ interface RouteMapProps {
   selectedRoute?: RouteOption;
   viewAll: boolean;
   onToggleViewAll: () => void;
+  onSelectRoute?: (routeId: string) => void;
 }
 
 function countTrafficIntervals(route: RouteOption, speed: string): number {
@@ -61,6 +63,7 @@ export function RouteMap({
   selectedRoute,
   viewAll,
   onToggleViewAll,
+  onSelectRoute,
 }: RouteMapProps) {
   const { config } = useMapConfig();
   const apiStatus = useApiLoadingStatus();
@@ -87,6 +90,7 @@ export function RouteMap({
 
   const hasDrawableRoutes = routes.some((route) => route.polyline.length > 1);
   const mapDescription = formatMapDescription(selectedRoute);
+  const markerRoute = selectedRoute ?? routes[0];
 
   return (
     <div className="map-shell" aria-describedby={descriptionId}>
@@ -110,7 +114,9 @@ export function RouteMap({
               selectedRouteId={selectedRouteId}
               congestion={congestion}
               weatherSeverity={weatherSeverity}
+              onSelectRoute={onSelectRoute}
             />
+            <RouteEndpointMarkers plan={plan} route={markerRoute} />
             <MapBoundsController
               routes={routes}
               selectedRouteId={selectedRouteId}
@@ -133,6 +139,7 @@ export function RouteMap({
       ) : null}
       <p id={descriptionId} className="visually-hidden">
         {mapDescription}
+        {plan && markerRoute ? ` Origin marker: ${plan.origin}. Destination marker: ${plan.destination}.` : ""}
       </p>
       {!hasDrawableRoutes ? (
         <p className="map-placeholder">{plan?.notice ?? "Enter two locations to compare routes."}</p>

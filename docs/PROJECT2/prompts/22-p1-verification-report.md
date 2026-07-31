@@ -113,19 +113,24 @@ These are **not P2 feature scope** unless Prompt 23 chooses to implement the har
 
 ## Manual Smoke Observations
 
-Environment: no `.env` file present (only `.env.example`). Server started with `python main.py`.
+**Environment (2026-07-31, credentials present):** `.env` loaded after server restart. `python main.py` + `npm run dev` at `http://127.0.0.1:5173`.
 
 | Scenario | Observation |
 |----------|-------------|
-| **Simulated plan** | Live call blocked without credentials (`503 maps_not_configured`). Behavior covered by mocked T-01 and component T-25. |
-| **Real-Time plan** | Same credential gate. Covered by T-02 and T-28. |
-| **Mode switch** | Component tests T-28 confirm Real-Time hides scenario controls and re-plans. |
-| **Scenario debounce** | T-27 confirms coalescing and abort of superseded requests. |
-| **Map render** | T-31 confirms `APIProvider` mounts with fetched credentials and polylines render in jsdom. |
-| **Map config failure** | `GET /api/map/config` returned `503` with `{"code":"maps_not_configured","detail":"Google Maps is not configured on the server."}` — matches FR-7.5 / NFR-2.3 contract. |
-| **Health** | `GET /api/health` returned `200` with `google_maps.ok: false` and probe message; startup was not blocked (NFR-2.4). |
+| **Health / server key** | `GET /api/health` → `200`, `google_maps.ok: true`, Places and Routes reachable |
+| **Simulated plan (API)** | `POST /api/plan` → 3 routes, `scenario_applied: true`, recommended route present (~8 s) |
+| **Real-Time plan (API)** | `POST /api/plan` → 1 route, `scenario_applied: false`, `data_source: Google Routes with live traffic` (~7 s) |
+| **Simulated plan (browser)** | Initial load planned Downtown Austin → Austin Airport; three route cards (Fastest, Balanced, Low traffic); analysis panel populated |
+| **Real-Time switch** | Mode toggle re-planned; scenario sliders hidden; single Fastest route; Real-Time notice displayed |
+| **Scenario debounce** | Covered by passing T-27; live slider interaction not re-verified in browser (keyboard/drag on range input inconclusive in automation) |
+| **Map render** | **Blocked** — see map-config note below |
+| **Map config failure (deliberate)** | `GET /api/map/config` → `503 maps_not_configured`. Map region shows contained error; route cards and analysis remain usable (NFR-2.3, FR-7.5) |
 
-Full browser smoke with live Google credentials requires copying `.env.example` to `.env` and setting both keys. That path is optional (T-57).
+### Map-config note
+
+Only `GOOGLE_MAPS_API_KEY` (server key) was present. Planning and health checks work. **`GOOGLE_MAPS_BROWSER_API_KEY` is still required** for `GET /api/map/config` and the interactive map. Add it to `.env` as a separate referrer-restricted Maps JavaScript API key, restart the server, then reload the app to verify polyline rendering.
+
+Without the browser key, the deliberate map-config failure path is still valid P1 evidence: planning degrades separately from the map surface.
 
 ---
 

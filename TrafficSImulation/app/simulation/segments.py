@@ -8,7 +8,6 @@ from app.config import (
     SEGMENT_CONGESTION_INDEX_STEP,
     SEGMENT_CONGESTION_MAX,
     SEGMENT_CONGESTION_MIN,
-    SEGMENT_COUNT_MAX,
     SEGMENT_LANE_COUNTS,
     SEGMENT_NAME_MAX_LENGTH,
     SEGMENT_SPEED_LIMITS_MPH,
@@ -40,9 +39,7 @@ class SegmentBuilder:
         congestion: int,
         route_index: int,
     ) -> list[RoadSegment]:
-        steps = route.steps[:SEGMENT_COUNT_MAX]
-        if not steps:
-            steps = [_synthetic_step(route)]
+        steps = route.steps if route.steps else [_synthetic_step(route)]
 
         slice_indices = _polyline_slice_indices(route.polyline, steps)
         return [
@@ -66,8 +63,12 @@ class SegmentBuilder:
         segment_index: int,
         slice_indices: tuple[int, int],
     ) -> RoadSegment:
-        speed_limit = SEGMENT_SPEED_LIMITS_MPH[segment_index]
-        lanes = SEGMENT_LANE_COUNTS[segment_index]
+        speed_limit = SEGMENT_SPEED_LIMITS_MPH[
+            min(segment_index, len(SEGMENT_SPEED_LIMITS_MPH) - 1)
+        ]
+        lanes = SEGMENT_LANE_COUNTS[
+            min(segment_index, len(SEGMENT_LANE_COUNTS) - 1)
+        ]
         capacity = lanes * BASE_LANE_CAPACITY
         local_congestion = max(
             SEGMENT_CONGESTION_MIN,

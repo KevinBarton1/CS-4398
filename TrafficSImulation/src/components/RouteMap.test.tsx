@@ -3,6 +3,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetMapConfigCache } from "../hooks/useMapConfig";
 import type { PlanResult, RouteOption } from "../types";
+import {
+  mockMarkerInstances,
+  mockPolylineInstances,
+  resetGoogleMapsMock,
+} from "../test/googleMapsMock";
 
 vi.mock("@vis.gl/react-google-maps", () => import("../test/googleMapsMock.tsx"));
 
@@ -80,6 +85,7 @@ const plan: PlanResult = {
 
 beforeEach(() => {
   resetMapConfigCache();
+  resetGoogleMapsMock();
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });
@@ -177,7 +183,7 @@ describe("RouteMap and MapConfigProvider", () => {
 
     await waitFor(() => expect(screen.getByTestId("google-map")).toBeInTheDocument());
     expect(
-      screen.getByText("Fastest route, 21.7 min, 6.9 mi, 2 slow stretches and 1 heavy stretch"),
+      screen.getByText(/Fastest route, 21\.7 min, 6\.9 mi, 2 slow stretches and 1 heavy stretch/),
     ).toBeInTheDocument();
   });
 
@@ -217,5 +223,49 @@ describe("RouteMap and MapConfigProvider", () => {
     );
     expect(screen.queryByTestId("api-provider")).not.toBeInTheDocument();
     expect(screen.queryByTestId("google-map")).not.toBeInTheDocument();
+  });
+
+  it("T-48: renders endpoint markers and selects a route on polyline click", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        maps_browser_api_key: "browser-key",
+        map_id: null,
+        default_center: { lat: 30.2672, lng: -97.7431 },
+        default_zoom: 12,
+        color_scheme: "DARK",
+        libraries: ["core", "maps"],
+      }),
+    });
+
+    const onSelectRoute = vi.fn();
+    const secondRoute = { ...baseRoute, id: "route-2", name: "Balanced" };
+    const { MapConfigProvider } = await import("./MapConfigProvider");
+    const { RouteMap } = await import("./RouteMap");
+
+    render(
+      <MapConfigProvider>
+        <RouteMap
+          routes={[baseRoute, secondRoute]}
+          selectedRouteId="route-1"
+          planBounds={plan.map_bounds}
+          plan={plan}
+          congestion={56}
+          weatherSeverity={1}
+          selectedRoute={baseRoute}
+          viewAll={false}
+          onToggleViewAll={() => undefined}
+          onSelectRoute={onSelectRoute}
+        />
+      </MapConfigProvider>,
+    );
+
+    await waitFor(() => expect(mockMarkerInstances).toHaveLength(2));
+    expect(mockMarkerInstances[0]?.options.title).toBe("Downtown Austin");
+    expect(mockMarkerInstances[1]?.options.title).toBe("Austin Airport");
+
+    await waitFor(() => expect(mockPolylineInstances.length).toBeGreaterThan(0));
+    mockPolylineInstances[0]?.emit("click");
+    expect(onSelectRoute).toHaveBeenCalledWith("route-1");
   });
 });

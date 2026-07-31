@@ -12,6 +12,7 @@ from app.api.errors import register_exception_handlers
 from app.api.routes import router
 from app.config import settings
 from app.map.health import GoogleApiProbe, ProbeResult
+from app.map.place_cache import PlaceResolutionCache
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "dist"
@@ -35,6 +36,7 @@ def create_app(
         client = http_client or httpx.AsyncClient()
         app.state.http_client = client
         app.state.settings = resolved_settings
+        app.state.place_cache = PlaceResolutionCache()
         if probe_result is not None:
             app.state.probe_result = probe_result
         else:

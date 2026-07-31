@@ -293,3 +293,44 @@ async def test_t21_upstream_failures_are_typed_and_sanitized(
 
 def test_t21_fixture_polyline_is_the_shared_known_input() -> None:
     assert ENCODED_POLYLINE == "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
+
+
+@pytest.mark.asyncio
+async def test_t50_retries_once_on_transient_upstream_failure() -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(503, request=request)
+        return mock_json_response(request, ROUTES_SUCCESS_PAYLOAD)
+
+    async with make_mock_async_client(handler) as client:
+        routes = await GoogleRoutesGateway(
+            Settings(google_maps_api_key="test-server-key"),
+            client,
+        ).compute(ORIGIN, DESTINATION, DEPARTURE, alternatives=False)
+
+    assert attempts == 2
+    assert len(routes) == 1
+
+
+@pytest.mark.asyncio
+async def test_t50_does_not_retry_non_transient_status() -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        return httpx.Response(429, request=request)
+
+    async with make_mock_async_client(handler) as client:
+        gateway = GoogleRoutesGateway(
+            Settings(google_maps_api_key="test-server-key"),
+            client,
+        )
+        with pytest.raises(UpstreamUnavailableError):
+            await gateway.compute(ORIGIN, DESTINATION, DEPARTURE, alternatives=False)
+
+    assert attempts == 1

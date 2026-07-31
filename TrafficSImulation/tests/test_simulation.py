@@ -158,10 +158,10 @@ def test_t14_segment_count_and_statistics_respect_bounds() -> None:
     low = SegmentBuilder().build(route, congestion=0, route_index=10)
     high = SegmentBuilder().build(route, congestion=100, route_index=0)
 
-    assert len(low) == 2
-    assert len(high) == 2
-    assert [segment.congestion for segment in low] == [0.05, 0.05]
-    assert [segment.congestion for segment in high] == [0.98, 0.98]
+    assert len(low) == 4
+    assert len(high) == 4
+    assert [segment.congestion for segment in low] == [0.05, 0.05, 0.05, 0.05]
+    assert [segment.congestion for segment in high] == [0.98, 0.98, 0.98, 0.98]
     for segment in low + high:
         assert segment.capacity_vehicles_hour == segment.lanes * 520
         assert (

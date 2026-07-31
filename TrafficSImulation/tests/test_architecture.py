@@ -75,6 +75,7 @@ GOOGLE_MAPS_ALLOWLIST = {
     SRC_ROOT / "components" / "MapConfigProvider.tsx",
     SRC_ROOT / "components" / "RouteMap.tsx",
     SRC_ROOT / "components" / "RoutePolylineLayer.tsx",
+    SRC_ROOT / "components" / "RouteEndpointMarkers.tsx",
     SRC_ROOT / "components" / "MapBoundsController.tsx",
 }
 

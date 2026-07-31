@@ -72,18 +72,20 @@ retry, and the expanded test matrix including an end-to-end flow. Do not start h
 
 ## Definition Of Done
 
-- [ ] Every P2 Target row you claim has a passing planned test and an updated Progress cell.
-- [ ] Scenario-only re-plans issue no additional Places requests.
-- [ ] Segments cover the full step list.
-- [ ] Markers and polyline click-to-select work on the single map path.
-- [ ] Transient upstream failures see exactly one jittered retry.
-- [ ] Reduced motion is honored; the automated audit reports no critical violations.
-- [ ] Bundle budget holds.
-- [ ] The e2e flow passes.
-- [ ] `python -m pytest`, `npm test`, and `npm run build` pass.
-- [ ] No P3 behavior was introduced.
+- [x] Every P2 Target row you claim has a passing planned test and an updated Progress cell.
+- [x] Scenario-only re-plans issue no additional Places requests.
+- [x] Segments cover the full step list.
+- [x] Markers and polyline click-to-select work on the single map path.
+- [x] Transient upstream failures see exactly one jittered retry.
+- [x] Reduced motion is honored; the automated audit reports no critical violations.
+- [x] Bundle budget holds.
+- [x] The e2e flow passes.
+- [x] `python -m pytest`, `npm test`, and `npm run build` pass.
+- [x] No P3 behavior was introduced.
 
 ## Handoff
 
 Report the P2 rows completed, the cache key design, the retry policy, the e2e command, and any P2
 requirement you could not close with the reason.
+
+Attach [23-p2-verification-report.md](23-p2-verification-report.md).
