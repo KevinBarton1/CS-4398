@@ -2,7 +2,17 @@ export type Mode = "simulated" | "realtime";
 
 export type TrafficSpeed = "NORMAL" | "SLOW" | "TRAFFIC_JAM" | "SPEED_UNSPECIFIED";
 
-export type RequestState = "idle" | "loading" | "success" | "error";
+export type RequestState = "idle" | "loading" | "success" | "empty" | "error";
+
+export type ApiErrorCode =
+  | "validation_error"
+  | "invalid_location"
+  | "same_origin_destination"
+  | "no_route_found"
+  | "maps_not_configured"
+  | "upstream_unavailable"
+  | "upstream_timeout"
+  | null;
 
 export interface LatLngPoint {
   lat: number;
@@ -130,6 +140,6 @@ export interface ValidationField {
 
 export interface ApiError {
   detail: string;
-  code: string;
+  code: ApiErrorCode;
   fields: ValidationField[] | null;
 }

@@ -6,6 +6,9 @@ import type {
   PlanResult,
 } from "../types";
 
+export const CONNECTIVITY_DETAIL =
+  "Could not reach TrafficScope. Check your connection and try again.";
+
 export class ApiClientError extends Error {
   readonly apiError: ApiError;
 
@@ -26,18 +29,18 @@ async function readJson(response: Response): Promise<unknown> {
 
 function parseApiError(body: unknown): ApiError {
   if (typeof body === "object" && body !== null) {
-    const candidate = body as Partial<ApiError>;
+    const candidate = body as Partial<ApiError & { code?: string | null }>;
     if (typeof candidate.detail === "string" && typeof candidate.code === "string") {
       return {
         detail: candidate.detail,
-        code: candidate.code,
+        code: candidate.code as ApiError["code"],
         fields: Array.isArray(candidate.fields) ? candidate.fields : null,
       };
     }
   }
   return {
     detail: "Request failed.",
-    code: "unknown_error",
+    code: null,
     fields: null,
   };
 }
@@ -47,7 +50,20 @@ async function request<T>(
   init: RequestInit,
   signal?: AbortSignal,
 ): Promise<T> {
-  const response = await fetch(path, { ...init, signal });
+  let response: Response;
+  try {
+    response = await fetch(path, { ...init, signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+    throw new ApiClientError({
+      detail: CONNECTIVITY_DETAIL,
+      code: null,
+      fields: null,
+    });
+  }
+
   const body = await readJson(response);
 
   if (!response.ok) {

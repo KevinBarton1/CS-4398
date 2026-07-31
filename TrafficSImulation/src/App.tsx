@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { Header } from "./components/Header";
 import { MapConfigProvider } from "./components/MapConfigProvider";
 import { RouteMap } from "./components/RouteMap";
 import { RouteOptionList } from "./components/RouteOptionList";
 import { RoutePlannerForm } from "./components/RoutePlannerForm";
-import { Toast } from "./components/Toast";
+import { StatusBanner } from "./components/StatusBanner";
+import { Toast, type ToastMessage } from "./components/Toast";
 import { useRoutePlan } from "./hooks/useRoutePlan";
 
 export function App() {
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<ToastMessage | null>(null);
   const {
     origin,
     setOrigin,
@@ -24,14 +25,27 @@ export function App() {
     setSelectedId,
     selectedRoute,
     loading,
-    message,
-    setMessage,
+    status,
+    bannerError,
+    toastFromError,
+    planStale,
     submit,
+    retry,
     resetScenario,
+    dismissError,
   } = useRoutePlan();
 
   const scenarioApplied = plan?.scenario_applied ?? mode === "simulated";
-  const toastMessage = notice || message;
+  const toastMessage = useMemo<ToastMessage | null>(() => {
+    if (notice) {
+      return notice;
+    }
+    return toastFromError;
+  }, [notice, toastFromError]);
+
+  const showLoadingBanner = status === "loading" && !plan;
+  const showEmptyBanner = status === "empty";
+  const showErrorBanner = status === "error" && bannerError !== null;
 
   return (
     <>
@@ -45,8 +59,22 @@ export function App() {
             setDestination={setDestination}
             loading={loading}
             onSubmit={submit}
-            onNotice={setNotice}
+            onNotice={(message) =>
+              setNotice({ detail: message, variant: "info" })
+            }
           />
+          {showLoadingBanner ? <StatusBanner variant="loading" region="planner" /> : null}
+          {showEmptyBanner ? (
+            <StatusBanner variant="empty" region="planner" onRetry={retry} />
+          ) : null}
+          {showErrorBanner ? (
+            <StatusBanner variant="error" error={bannerError} region="planner" onRetry={retry} />
+          ) : null}
+          {planStale ? (
+            <p className="stale-marker" role="status">
+              Showing the last successful plan. The most recent update did not complete.
+            </p>
+          ) : null}
           <RouteOptionList
             routes={plan?.routes ?? []}
             selectedRouteId={selectedId}
@@ -85,8 +113,8 @@ export function App() {
       <Toast
         message={toastMessage}
         onDismiss={() => {
-          setNotice("");
-          setMessage();
+          setNotice(null);
+          dismissError();
         }}
       />
     </>

@@ -1,10 +1,26 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ApiClientError, postPlan } from "../api/client";
+import { ApiClientError, CONNECTIVITY_DETAIL, postPlan } from "../api/client";
+import {
+  getErrorGuidance,
+  shouldShowPlanErrorAsToast,
+} from "../components/StatusBanner";
+import type { ToastMessage } from "../components/Toast";
 import { defaultScenario, SCENARIO_DEBOUNCE_MS } from "../constants/scenario";
 import type { ApiError, Mode, PlanResult, RequestState, Scenario } from "../types";
 
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
+}
+
+function toApiError(caught: unknown): ApiError {
+  if (caught instanceof ApiClientError) {
+    return caught.apiError;
+  }
+  return {
+    detail: caught instanceof Error ? caught.message : CONNECTIVITY_DETAIL,
+    code: null,
+    fields: null,
+  };
 }
 
 function reconcileSelection(
@@ -67,39 +83,24 @@ export function useRoutePlan() {
         controller.signal,
       );
 
-        if (requestId !== requestIdRef.current) {
-          return;
-        }
-
-        setPlan(result);
-        setSelectedRouteId((current) =>
-          reconcileSelection(result.routes, result.recommended_route_id, current, preserveSelection),
-        );
-        setStatus("success");
-      } catch (caught) {
-        if (isAbortError(caught) || requestId !== requestIdRef.current) {
-          return;
-        }
-
-        const apiError =
-          caught instanceof ApiClientError
-            ? caught.apiError
-            : {
-                detail: caught instanceof Error ? caught.message : "Unable to calculate routes.",
-                code: "unknown_error",
-                fields: null,
-              };
-
-        setError(apiError);
-        setStatus("error");
-
-        const retainedPlan = planRef.current;
-        if (retainedPlan) {
-          setModeState(retainedPlan.mode);
-        }
+      if (requestId !== requestIdRef.current) {
+        return;
       }
-    },
-  []);
+
+      setPlan(result);
+      setSelectedRouteId((current) =>
+        reconcileSelection(result.routes, result.recommended_route_id, current, preserveSelection),
+      );
+      setStatus(result.routes.length === 0 ? "empty" : "success");
+    } catch (caught) {
+      if (isAbortError(caught) || requestId !== requestIdRef.current) {
+        return;
+      }
+
+      setError(toApiError(caught));
+      setStatus("error");
+    }
+  }, []);
 
   const scheduleReplan = useCallback(
     (preserveSelection: boolean) => {
@@ -158,8 +159,20 @@ export function useRoutePlan() {
     [executePlan],
   );
 
+  const retry = useCallback(() => {
+    window.clearTimeout(debounceRef.current);
+    void executePlan(true);
+  }, [executePlan]);
+
   const selectRoute = useCallback((id: string) => {
     setSelectedRouteId(id);
+  }, []);
+
+  const dismissError = useCallback(() => {
+    setError(null);
+    if (planRef.current) {
+      setStatus("success");
+    }
   }, []);
 
   const selectedRoute = useMemo(
@@ -168,6 +181,17 @@ export function useRoutePlan() {
   );
 
   const loading = status === "loading";
+  const planStale = status === "error" && plan !== null;
+  const bannerError = error && !shouldShowPlanErrorAsToast(error, plan !== null) ? error : null;
+  const toastFromError: ToastMessage | null =
+    error && shouldShowPlanErrorAsToast(error, plan !== null)
+      ? {
+          detail: error.detail,
+          guidance: getErrorGuidance(error.code),
+          variant: "error",
+          onRetry: retry,
+        }
+      : null;
 
   return {
     origin,
@@ -181,16 +205,19 @@ export function useRoutePlan() {
     selectedRoute,
     status,
     error,
+    bannerError,
+    toastFromError,
+    planStale,
     loading,
     submit,
+    retry,
     setMode,
     setScenario,
     resetScenario,
     selectRoute,
+    dismissError,
     setSelectedId: selectRoute,
     selectedId: selectedRouteId,
-    message: error?.detail ?? "",
-    setMessage: () => setError(null),
     setSelectedRouteId,
   };
 }

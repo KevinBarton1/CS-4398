@@ -9,6 +9,7 @@ import { useMapConfig } from "../hooks/useMapConfig";
 import type { PlanResult, RouteOption, RouteBounds } from "../types";
 import { MapBoundsController } from "./MapBoundsController";
 import { RoutePolylineLayer } from "./RoutePolylineLayer";
+import type { ApiError } from "../types";
 import { StatusBanner } from "./StatusBanner";
 
 interface RouteMapProps {
@@ -54,7 +55,9 @@ export function RouteMap({
     return (
       <section className="map-shell" aria-label="Google Maps route view">
         <StatusBanner
+          variant="error"
           detail="The Google Maps script could not be loaded."
+          guidance="Try again in a moment."
           onRetry={() => setApiRetryKey((current) => current + 1)}
           region="map"
         />
@@ -115,10 +118,16 @@ export function RouteMap({
   );
 }
 
-export function RouteMapUnavailable({ detail, onRetry }: { detail: string; onRetry?: () => void }) {
+export function RouteMapUnavailable({
+  error,
+  onRetry,
+}: {
+  error: ApiError;
+  onRetry?: () => void;
+}) {
   return (
     <section className="map-shell" aria-label="Google Maps route view">
-      <StatusBanner detail={detail} onRetry={onRetry} region="map" />
+      <StatusBanner variant="error" error={error} onRetry={onRetry} region="map" />
     </section>
   );
 }

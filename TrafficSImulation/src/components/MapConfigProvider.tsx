@@ -21,7 +21,13 @@ export function MapConfigProvider({ children }: MapConfigProviderProps) {
   if (status === "error" || !config) {
     return (
       <RouteMapUnavailable
-        detail={error?.detail ?? "Map configuration is unavailable."}
+        error={
+          error ?? {
+            detail: "Map configuration is unavailable.",
+            code: null,
+            fields: null,
+          }
+        }
         onRetry={retry}
       />
     );

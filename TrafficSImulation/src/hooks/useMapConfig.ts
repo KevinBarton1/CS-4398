@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ApiClientError, getMapConfig } from "../api/client";
+import { ApiClientError, CONNECTIVITY_DETAIL, getMapConfig } from "../api/client";
 import type { ApiError, MapConfig, RequestState } from "../types";
 
 let cachedConfig: MapConfig | null = null;
@@ -31,8 +31,8 @@ function fetchMapConfigOnce(): Promise<void> {
         caught instanceof ApiClientError
           ? caught.apiError
           : {
-              detail: caught instanceof Error ? caught.message : "Map configuration unavailable.",
-              code: "unknown_error",
+              detail: caught instanceof Error ? caught.message : CONNECTIVITY_DETAIL,
+              code: null,
               fields: null,
             };
       cachedConfig = null;
