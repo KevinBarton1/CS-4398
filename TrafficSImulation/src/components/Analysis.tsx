@@ -1,45 +1,18 @@
-import { weatherLabels } from "../constants/scenario";
-import type { Mode, RouteOption, Scenario } from "../types";
-import { hourLabel } from "../utils/format";
+import type { Mode, RouteOption } from "../types";
 
 interface AnalysisProps {
   route?: RouteOption;
   recommended?: string;
   mode: Mode;
-  scenario: Scenario;
-  setScenario: (value: Scenario) => void;
-  onReset: () => void;
 }
 
-export function Analysis({ route, recommended, mode, scenario, setScenario, onReset }: AnalysisProps) {
-  if (!route) return <aside className="analysis skeleton" />;
+export function Analysis({ route, recommended, mode }: AnalysisProps) {
+  if (!route) return null;
 
   const factors = route.price_factors;
 
-  const control = (
-    key: keyof Scenario,
-    label: string,
-    min: number,
-    max: number,
-    output: string
-  ) => (
-    <label className="control" key={key}>
-      <span>
-        <b>{label}</b>
-        <output>{output}</output>
-      </span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={scenario[key]}
-        onChange={(e) => setScenario({ ...scenario, [key]: Number(e.target.value) })}
-      />
-    </label>
-  );
-
   return (
-    <aside className="analysis">
+    <>
       <section className="card selected-summary">
         <div className="heading">
           <div>
@@ -79,23 +52,6 @@ export function Analysis({ route, recommended, mode, scenario, setScenario, onRe
         <p>Illustrative estimate only. Not an official Uber or Lyft fare.</p>
       </section>
 
-      {mode === "simulated" && (
-        <section className="card scenario">
-          <div className="heading">
-            <div>
-              <span className="eyebrow">Scenario lab</span>
-              <h2>Shape conditions</h2>
-            </div>
-            <button type="button" onClick={onReset}>
-              Reset
-            </button>
-          </div>
-          {control("hour", "Time of day", 0, 23, hourLabel(scenario.hour))}
-          {control("weather", "Weather", 0, 3, weatherLabels[scenario.weather])}
-          {control("congestion", "Congestion", 0, 100, `${scenario.congestion}%`)}
-        </section>
-      )}
-
       <section className="card road-detail">
         <span className="eyebrow">Road detail</span>
         <h2>Segment statistics</h2>
@@ -133,6 +89,6 @@ export function Analysis({ route, recommended, mode, scenario, setScenario, onRe
           </table>
         </div>
       </section>
-    </aside>
+    </>
   );
 }

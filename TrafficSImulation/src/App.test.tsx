@@ -124,11 +124,11 @@ test("renders the required hierarchy and API results", async () => {
   const { container } = render(<App />);
   expect(screen.getByRole("heading", { name: "Find the better drive." })).toBeInTheDocument();
   expect(screen.getByLabelText("Starting point")).toBeInTheDocument();
-  expect(screen.getByLabelText("Destination or zone")).toBeInTheDocument();
+  expect(screen.getByLabelText("Destination")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Simulated" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Real-Time" })).toBeInTheDocument();
   await waitFor(() => expect(screen.getAllByText("$31.11")).toHaveLength(4));
-  expect(screen.getByRole("button", { name: /Plan Route/ })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Plan routes" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Fastest" })).toBeInTheDocument();
   expect(screen.getByText("Riverside Dr")).toBeInTheDocument();
   await waitFor(() => expect(screen.getByTestId("google-map")).toHaveClass("route-map"));
@@ -149,4 +149,10 @@ test("realtime mode hides simulation controls", async () => {
   expect(container.querySelector(".source")).toHaveTextContent("Real-Time");
   expect(screen.getByText("Route comparison is available in Simulated mode.")).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Shape conditions" })).not.toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Real-Time mode plans for the current departure time using live Google Maps traffic. Scenario controls apply in Simulated mode.",
+    ),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole("slider")).not.toBeInTheDocument();
 });

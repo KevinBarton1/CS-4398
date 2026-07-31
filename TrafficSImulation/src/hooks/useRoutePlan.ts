@@ -167,18 +167,6 @@ export function useRoutePlan() {
     [plan, selectedRouteId],
   );
 
-  const handleLocation = useCallback(() => {
-    navigator.geolocation?.getCurrentPosition(
-      () => setOrigin("Current location"),
-      () =>
-        setError({
-          detail: "Location permission was denied. Enter a starting point manually.",
-          code: "unknown_error",
-          fields: null,
-        }),
-    );
-  }, []);
-
   const loading = status === "loading";
 
   return {
@@ -199,13 +187,10 @@ export function useRoutePlan() {
     setScenario,
     resetScenario,
     selectRoute,
-    handleSubmit: submit,
-    handleLocation,
     setSelectedId: selectRoute,
     selectedId: selectedRouteId,
-    data: plan,
     message: error?.detail ?? "",
-    setMessage: (_message?: string) => setError(null),
+    setMessage: () => setError(null),
     setSelectedRouteId,
   };
 }

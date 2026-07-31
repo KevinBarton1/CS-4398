@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { Analysis } from "./components/Analysis";
 import { Header } from "./components/Header";
 import { MapConfigProvider } from "./components/MapConfigProvider";
 import { RouteMap } from "./components/RouteMap";
 import { RouteOptions } from "./components/RouteOptions";
-import { RoutePlanner } from "./components/RoutePlanner";
+import { RoutePlannerForm } from "./components/RoutePlannerForm";
+import { ScenarioControls } from "./components/ScenarioControls";
 import { Toast } from "./components/Toast";
 import { useRoutePlan } from "./hooks/useRoutePlan";
 
 export function App() {
+  const [notice, setNotice] = useState("");
   const {
     origin,
     setOrigin,
@@ -17,61 +20,80 @@ export function App() {
     setMode,
     scenario,
     setScenario,
-    data,
+    plan,
     selectedId,
     setSelectedId,
     selectedRoute,
     loading,
     message,
     setMessage,
-    handleSubmit,
-    handleLocation,
+    submit,
     resetScenario,
   } = useRoutePlan();
+
+  const showScenarioControls = mode === "simulated" && (plan?.scenario_applied ?? true);
+  const toastMessage = notice || message;
 
   return (
     <>
       <Header mode={mode} onModeChange={setMode} loading={loading} />
       <main>
         <aside className="planner">
-          <RoutePlanner
+          <RoutePlannerForm
             origin={origin}
             destination={destination}
             setOrigin={setOrigin}
             setDestination={setDestination}
             loading={loading}
-            onSubmit={handleSubmit}
-            onLocation={handleLocation}
+            onSubmit={submit}
+            onNotice={setNotice}
           />
           <RouteOptions
-            routes={data?.routes ?? []}
+            routes={plan?.routes ?? []}
             selected={selectedId}
-            recommended={data?.recommended_route_id}
+            recommended={plan?.recommended_route_id}
             mode={mode}
             onSelect={setSelectedId}
           />
         </aside>
         <MapConfigProvider>
           <RouteMap
-            routes={data?.routes ?? []}
+            routes={plan?.routes ?? []}
             selectedRouteId={selectedId}
-            planBounds={data?.map_bounds}
-            plan={data}
-            congestion={data?.scenario_applied ? scenario.congestion : 0}
-            weatherSeverity={data?.scenario_applied ? (data?.weather.severity ?? 0) : 0}
+            planBounds={plan?.map_bounds}
+            plan={plan}
+            congestion={plan?.scenario_applied ? scenario.congestion : 0}
+            weatherSeverity={plan?.scenario_applied ? (plan?.weather.severity ?? 0) : 0}
             selectedRoute={selectedRoute}
           />
         </MapConfigProvider>
-        <Analysis
-          route={selectedRoute}
-          recommended={data?.recommended_route_id}
-          mode={mode}
-          scenario={scenario}
-          setScenario={setScenario}
-          onReset={resetScenario}
-        />
+        <aside className={`analysis${selectedRoute ? "" : " skeleton"}`}>
+          {selectedRoute ? (
+            <Analysis route={selectedRoute} recommended={plan?.recommended_route_id} mode={mode} />
+          ) : null}
+          {showScenarioControls ? (
+            <ScenarioControls
+              scenario={scenario}
+              setScenario={setScenario}
+              onReset={resetScenario}
+            />
+          ) : (
+            <section className="card scenario-unavailable">
+              <p className="panel-disabled-note">
+                Real-Time mode plans for the current departure time using live Google Maps traffic.
+                Scenario controls apply in Simulated mode.
+              </p>
+            </section>
+          )}
+        </aside>
       </main>
-      <Toast message={message} onDismiss={() => setMessage("")} />
+      <Toast
+        message={toastMessage}
+        onDismiss={() => {
+          setNotice("");
+          setMessage();
+        }}
+      />
     </>
   );
 }
