@@ -67,17 +67,19 @@ congestion only. Demand and profitability are out of scope.
 
 ## Definition Of Done
 
-- [ ] `POST /api/heatmap` returns congestion cells for a scenario under the provisional contract.
-- [ ] Cells render as an overlay on the existing map instance.
-- [ ] A legend describes the intensity scale.
-- [ ] Toggling the overlay preserves the plan and camera.
-- [ ] No demand or profitability metric exists.
-- [ ] T-40, T-41, and T-51 pass.
-- [ ] Contract and architecture tests still pass.
-- [ ] Traceability Progress for FR-8.1 through FR-8.4 reflects passing tests.
-- [ ] `python -m pytest`, `npm test`, and `npm run build` pass.
+- [x] `POST /api/heatmap` returns congestion cells for a scenario under the provisional contract.
+- [x] Cells render as an overlay on the existing map instance.
+- [x] A legend describes the intensity scale.
+- [x] Toggling the overlay preserves the plan and camera.
+- [x] No demand or profitability metric exists.
+- [x] T-40, T-41, and T-51 pass.
+- [x] Contract and architecture tests still pass.
+- [x] Traceability Progress for FR-8.1 through FR-8.4 reflects passing tests.
+- [x] `python -m pytest`, `npm test`, and `npm run build` pass.
 
 ## Handoff
 
 Report the final heatmap contract as implemented, the overlay component name, the legend copy, and
 any provisional-contract decision that needs to be promoted into [../README.md](../README.md).
+
+Attach [24-p3-verification-report.md](24-p3-verification-report.md).

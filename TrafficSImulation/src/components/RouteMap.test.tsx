@@ -121,6 +121,8 @@ describe("RouteMap and MapConfigProvider", () => {
           plan={plan}
           congestion={56}
           weatherSeverity={1}
+          heatmapHour={17}
+          heatmapCongestion={56}
           selectedRoute={baseRoute}
           viewAll={false}
           onToggleViewAll={() => undefined}
@@ -173,6 +175,8 @@ describe("RouteMap and MapConfigProvider", () => {
             plan={plan}
             congestion={56}
             weatherSeverity={1}
+            heatmapHour={17}
+            heatmapCongestion={56}
             selectedRoute={routeWithTraffic}
             viewAll={false}
             onToggleViewAll={() => undefined}
@@ -209,6 +213,8 @@ describe("RouteMap and MapConfigProvider", () => {
           plan={plan}
           congestion={0}
           weatherSeverity={0}
+          heatmapHour={17}
+          heatmapCongestion={56}
           selectedRoute={baseRoute}
           viewAll={false}
           onToggleViewAll={() => undefined}
@@ -252,6 +258,8 @@ describe("RouteMap and MapConfigProvider", () => {
           plan={plan}
           congestion={56}
           weatherSeverity={1}
+          heatmapHour={17}
+          heatmapCongestion={56}
           selectedRoute={baseRoute}
           viewAll={false}
           onToggleViewAll={() => undefined}

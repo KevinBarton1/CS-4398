@@ -12,6 +12,7 @@ from app.map.types import (
 )
 
 PlanMode = Literal["simulated", "realtime"]
+HeatmapMetric = Literal["congestion"]
 
 
 class ApiModel(BaseModel):
@@ -30,6 +31,11 @@ class PlanRequest(ApiModel):
     mode: PlanMode = "simulated"
     hour: int = Field(default=DEFAULT_HOUR, ge=0, le=23)
     weather: int = Field(default=DEFAULT_WEATHER, ge=0, le=3)
+    congestion: int = Field(default=DEFAULT_CONGESTION, ge=0, le=100)
+
+
+class HeatmapRequest(ApiModel):
+    hour: int = Field(default=DEFAULT_HOUR, ge=0, le=23)
     congestion: int = Field(default=DEFAULT_CONGESTION, ge=0, le=100)
 
 
@@ -89,6 +95,13 @@ class RouteOption(ApiModel):
     bounds: RouteBounds
 
 
+class HeatmapCell(ApiModel):
+    row: int = Field(ge=0)
+    column: int = Field(ge=0)
+    value: int = Field(ge=0, le=100)
+    bounds: RouteBounds
+
+
 class PlanResponse(ApiModel):
     origin: str
     destination: str
@@ -99,6 +112,16 @@ class PlanResponse(ApiModel):
     routes: list[RouteOption] = Field(min_length=1)
     recommended_route_id: str
     map_bounds: RouteBounds
+    notice: str
+
+
+class HeatmapResponse(ApiModel):
+    metric: HeatmapMetric
+    rows: int = Field(ge=1)
+    columns: int = Field(ge=1)
+    scenario: Scenario
+    bounds: RouteBounds
+    cells: list[HeatmapCell] = Field(min_length=1)
     notice: str
 
 
@@ -133,6 +156,10 @@ class ErrorResponse(ApiModel):
 __all__ = [
     "ErrorResponse",
     "HealthResponse",
+    "HeatmapCell",
+    "HeatmapMetric",
+    "HeatmapRequest",
+    "HeatmapResponse",
     "LatLngPoint",
     "MapConfigResponse",
     "PlanMode",

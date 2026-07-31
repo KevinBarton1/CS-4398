@@ -5,8 +5,11 @@ import {
   Map,
   useApiLoadingStatus,
 } from "@vis.gl/react-google-maps";
+import { useHeatmap } from "../hooks/useHeatmap";
 import { useMapConfig } from "../hooks/useMapConfig";
 import type { PlanResult, RouteOption, RouteBounds } from "../types";
+import { HeatmapLayer } from "./HeatmapLayer";
+import { HeatmapLegend } from "./HeatmapLegend";
 import { MapBoundsController } from "./MapBoundsController";
 import { RouteEndpointMarkers } from "./RouteEndpointMarkers";
 import { RoutePolylineLayer } from "./RoutePolylineLayer";
@@ -20,6 +23,8 @@ interface RouteMapProps {
   plan: PlanResult | null;
   congestion: number;
   weatherSeverity: number;
+  heatmapHour: number;
+  heatmapCongestion: number;
   selectedRoute?: RouteOption;
   viewAll: boolean;
   onToggleViewAll: () => void;
@@ -60,6 +65,8 @@ export function RouteMap({
   plan,
   congestion,
   weatherSeverity,
+  heatmapHour,
+  heatmapCongestion,
   selectedRoute,
   viewAll,
   onToggleViewAll,
@@ -68,6 +75,8 @@ export function RouteMap({
   const { config } = useMapConfig();
   const apiStatus = useApiLoadingStatus();
   const [apiRetryKey, setApiRetryKey] = useState(0);
+  const [heatmapVisible, setHeatmapVisible] = useState(false);
+  const { data: heatmap } = useHeatmap(heatmapHour, heatmapCongestion, heatmapVisible);
   const descriptionId = useId();
 
   if (!config) {
@@ -109,6 +118,7 @@ export function RouteMap({
       >
         {hasDrawableRoutes ? (
           <>
+            <HeatmapLayer heatmap={heatmap} visible={heatmapVisible} />
             <RoutePolylineLayer
               routes={routes}
               selectedRouteId={selectedRouteId}
@@ -127,6 +137,14 @@ export function RouteMap({
           </>
         ) : null}
       </Map>
+      <button
+        type="button"
+        className={`map-heatmap-toggle${heatmapVisible ? " active" : ""}`}
+        aria-pressed={heatmapVisible}
+        onClick={() => setHeatmapVisible((current) => !current)}
+      >
+        Congestion map
+      </button>
       {routes.length > 1 ? (
         <button
           type="button"
@@ -137,6 +155,7 @@ export function RouteMap({
           View all
         </button>
       ) : null}
+      {heatmapVisible && heatmap ? <HeatmapLegend notice={heatmap.notice} /> : null}
       <p id={descriptionId} className="visually-hidden">
         {mapDescription}
         {plan && markerRoute ? ` Origin marker: ${plan.origin}. Destination marker: ${plan.destination}.` : ""}

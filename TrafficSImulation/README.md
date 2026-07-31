@@ -45,6 +45,17 @@ npm run dev
 
 Open <http://127.0.0.1:5173>. Vite proxies `/api` requests to FastAPI at `http://127.0.0.1:8000`.
 
+## API Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/plan` | Route planning for Simulated or Real-Time mode |
+| `POST` | `/api/heatmap` | Simulated congestion grid for a departure hour and congestion level |
+| `GET` | `/api/map/config` | Browser Maps JavaScript API configuration |
+| `GET` | `/api/health` | Service health and Google Maps probe status |
+
+`POST /api/heatmap` accepts `{ "hour": 0-23, "congestion": 0-100 }` and returns a 5×8 congestion cell grid over the Austin service area. It makes no upstream call. Toggle **Congestion map** on the route map to render the overlay.
+
 ## Test
 
 Run both suites:

@@ -244,3 +244,27 @@ def test_t11_map_config_without_browser_key_returns_503(
 
         assert response.status_code == 503
         assert response.json()["code"] == "maps_not_configured"
+
+
+def test_t41_heatmap_happy_path(client: TestClient) -> None:
+    response = client.post("/api/heatmap", json={"hour": 17, "congestion": 56})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["metric"] == "congestion"
+    assert body["rows"] == 5
+    assert body["columns"] == 8
+    assert len(body["cells"]) == 40
+    assert body["scenario"] == {"hour": 17, "weather": 0, "congestion": 56}
+    assert body["bounds"]["north"] > body["bounds"]["south"]
+    assert body["notice"]
+    first = body["cells"][0]
+    assert {"row", "column", "value", "bounds"} <= set(first.keys())
+    assert 0 <= first["value"] <= 100
+
+
+def test_t41_heatmap_out_of_range_hour_returns_validation_error(client: TestClient) -> None:
+    response = client.post("/api/heatmap", json={"hour": 99, "congestion": 56})
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "validation_error"

@@ -11,6 +11,9 @@ from pydantic import BaseModel
 from app.api.models import (
     ErrorResponse,
     HealthResponse,
+    HeatmapCell,
+    HeatmapRequest,
+    HeatmapResponse,
     MapConfigResponse,
     PlanRequest,
     PlanResponse,
@@ -118,6 +121,17 @@ LOCKED_MODEL_FIELDS: dict[str, set[str]] = {
         "weather",
         "congestion",
     },
+    "HeatmapRequest": {"hour", "congestion"},
+    "HeatmapCell": {"row", "column", "value", "bounds"},
+    "HeatmapResponse": {
+        "metric",
+        "rows",
+        "columns",
+        "scenario",
+        "bounds",
+        "cells",
+        "notice",
+    },
 }
 
 TYPESCRIPT_INTERFACE_MIRROR: dict[str, tuple[str, set[str]]] = {
@@ -130,6 +144,9 @@ TYPESCRIPT_INTERFACE_MIRROR: dict[str, tuple[str, set[str]]] = {
     "MapConfigResponse": ("MapConfig", LOCKED_MODEL_FIELDS["MapConfigResponse"]),
     "HealthResponse": ("HealthResponse", LOCKED_MODEL_FIELDS["HealthResponse"]),
     "PlanRequest": ("PlanRequest", LOCKED_MODEL_FIELDS["PlanRequest"]),
+    "HeatmapRequest": ("HeatmapRequest", LOCKED_MODEL_FIELDS["HeatmapRequest"]),
+    "HeatmapResponse": ("HeatmapResult", LOCKED_MODEL_FIELDS["HeatmapResponse"]),
+    "HeatmapCell": ("HeatmapCell", LOCKED_MODEL_FIELDS["HeatmapCell"]),
     "ErrorResponse": ("ApiError", LOCKED_MODEL_FIELDS["ErrorResponse"]),
     "ValidationField": ("ValidationField", LOCKED_MODEL_FIELDS["ValidationField"]),
     "LatLngPoint": ("LatLngPoint", LOCKED_MODEL_FIELDS["LatLngPoint"]),
@@ -150,6 +167,9 @@ MODEL_BY_NAME: dict[str, type[BaseModel]] = {
     "ErrorResponse": ErrorResponse,
     "ValidationField": ValidationField,
     "PlanRequest": PlanRequest,
+    "HeatmapRequest": HeatmapRequest,
+    "HeatmapResponse": HeatmapResponse,
+    "HeatmapCell": HeatmapCell,
 }
 
 DATACLASS_MODELS = {
@@ -237,6 +257,7 @@ def test_t24_plan_response_has_no_legacy_embed_fields() -> None:
         "map_embed_url",
         "map_view",
         "directions_embed_url",
+        "heatmap",
     }
     assert forbidden.isdisjoint(PlanResponse.model_fields.keys())
 

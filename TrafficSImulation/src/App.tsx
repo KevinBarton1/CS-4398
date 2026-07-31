@@ -96,6 +96,8 @@ export function App() {
               plan={plan}
               congestion={scenarioApplied ? effectiveScenario.congestion : 0}
               weatherSeverity={scenarioApplied ? (plan?.weather.severity ?? 0) : 0}
+              heatmapHour={effectiveScenario.hour}
+              heatmapCongestion={effectiveScenario.congestion}
               viewAll={viewAll}
               onToggleViewAll={toggleViewAll}
               selectedRoute={selectedRoute}

@@ -60,7 +60,32 @@ export class MockMarker {
   setMap = vi.fn();
 }
 
+export class MockRectangle {
+  options: {
+    map?: unknown;
+    bounds?: {
+      north: number;
+      south: number;
+      east: number;
+      west: number;
+    };
+    fillColor?: string;
+    fillOpacity?: number;
+    strokeWeight?: number;
+    clickable?: boolean;
+    zIndex?: number;
+  };
+
+  constructor(options: MockRectangle["options"]) {
+    this.options = options;
+    mockRectangleInstances.push(this);
+  }
+
+  setMap = vi.fn();
+}
+
 export const mockMarkerInstances: MockMarker[] = [];
+export const mockRectangleInstances: MockRectangle[] = [];
 
 export class MockLatLngBounds {
   southWest: LatLngLiteral;
@@ -119,7 +144,7 @@ export function Map({
 }
 
 const stableMap = { fitBounds: mockFitBounds };
-const mapsLibrary = { Polyline: MockPolyline, Marker: MockMarker };
+const mapsLibrary = { Polyline: MockPolyline, Marker: MockMarker, Rectangle: MockRectangle };
 const coreLibrary = { LatLngBounds: MockLatLngBounds };
 
 export function useMap() {
@@ -145,4 +170,5 @@ export function resetGoogleMapsMock() {
   mockPolylineSetMap.mockReset();
   mockPolylineInstances.length = 0;
   mockMarkerInstances.length = 0;
+  mockRectangleInstances.length = 0;
 }

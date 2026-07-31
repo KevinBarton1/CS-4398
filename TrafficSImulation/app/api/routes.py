@@ -2,9 +2,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app.api.dependencies import get_planning_service, get_probe_result, get_settings
+from app.api.dependencies import get_heatmap_service, get_planning_service, get_probe_result, get_settings
+from app.api.heatmap import HeatmapService
 from app.api.models import (
     HealthResponse,
+    HeatmapRequest,
+    HeatmapResponse,
     MapConfigResponse,
     PlanRequest,
     PlanResponse,
@@ -32,6 +35,14 @@ async def plan_trip(
     planner: Annotated[PlanningService, Depends(get_planning_service)],
 ) -> PlanResponse:
     return await planner.plan(request)
+
+
+@router.post("/heatmap")
+async def heatmap(
+    request: HeatmapRequest,
+    service: Annotated[HeatmapService, Depends(get_heatmap_service)],
+) -> HeatmapResponse:
+    return service.build(request)
 
 
 @router.get("/health")

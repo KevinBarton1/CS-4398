@@ -3,6 +3,7 @@ from typing import Annotated
 import httpx
 from fastapi import Depends, Request
 
+from app.api.heatmap import HeatmapService
 from app.api.planning import PlanningService
 from app.config import Settings, settings
 from app.map.health import ProbeResult
@@ -61,8 +62,18 @@ def get_planning_service(
     return build_planning_service(client, app_settings, place_cache)
 
 
+def build_heatmap_service() -> HeatmapService:
+    return HeatmapService()
+
+
+def get_heatmap_service() -> HeatmapService:
+    return build_heatmap_service()
+
+
 __all__ = [
+    "build_heatmap_service",
     "build_planning_service",
+    "get_heatmap_service",
     "get_http_client",
     "get_place_cache",
     "get_planning_service",

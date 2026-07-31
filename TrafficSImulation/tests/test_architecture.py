@@ -77,6 +77,7 @@ GOOGLE_MAPS_ALLOWLIST = {
     SRC_ROOT / "components" / "RoutePolylineLayer.tsx",
     SRC_ROOT / "components" / "RouteEndpointMarkers.tsx",
     SRC_ROOT / "components" / "MapBoundsController.tsx",
+    SRC_ROOT / "components" / "HeatmapLayer.tsx",
 }
 
 GOOGLE_MAPS_PATTERN = re.compile(r"google\.maps")

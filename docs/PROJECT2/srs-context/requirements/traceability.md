@@ -9,7 +9,8 @@ test, so that nothing is specified without an owner and nothing is claimed witho
 **Progress convention:** P1 rows verified in Prompt 22 (2026-07-31) are marked `Complete` when their
 planned tests pass. Harness-only or deployment rows remain `Deferred` or `Partial` with the reason in
 the Progress cell. P2 rows verified in Prompt 23 (2026-07-31) are marked `Complete` when their planned
-tests pass. P3 rows stay `Not started` until prompt 24 lands. Do not mark a row
+tests pass. P3 rows verified in Prompt 24 (2026-07-31) are marked `Complete` when their planned
+tests pass. Do not mark a row
 complete without a passing planned test.
 
 Test levels:
@@ -96,10 +97,10 @@ Test levels:
 | FR-7.10 | [../controller/external-service-boundaries.md](../controller/external-service-boundaries.md) | P2 | One jittered retry before surfacing a transient failure | T-50 | Complete |
 | FR-7.11 | — | — | Out of scope | — | Not planned |
 | FR-7.12 | — | — | Out of scope | — | Not planned |
-| FR-8.1 | [../model/heatmaps.md](../model/heatmaps.md) | P3 | `POST /api/heatmap` returns congestion cells | T-41 | Not started |
-| FR-8.2 | [../model/heatmaps.md](../model/heatmaps.md) | P3 | Cells render as an overlay on the existing map instance | T-51 | Not started |
-| FR-8.3 | [../model/heatmaps.md](../model/heatmaps.md) | P3 | A legend describes the intensity scale | T-51 | Not started |
-| FR-8.4 | [../model/heatmaps.md](../model/heatmaps.md) | P3 | Toggling the overlay preserves the plan and camera | T-51 | Not started |
+| FR-8.1 | [../model/heatmaps.md](../model/heatmaps.md) | P3 | `POST /api/heatmap` returns congestion cells | T-41 | Complete |
+| FR-8.2 | [../model/heatmaps.md](../model/heatmaps.md) | P3 | Cells render as an overlay on the existing map instance | T-51 | Complete |
+| FR-8.3 | [../model/heatmaps.md](../model/heatmaps.md) | P3 | A legend describes the intensity scale | T-51 | Complete |
+| FR-8.4 | [../model/heatmaps.md](../model/heatmaps.md) | P3 | Toggling the overlay preserves the plan and camera | T-51 | Complete |
 | FR-8.5 | — | — | Out of scope | — | Not planned |
 | FR-8.6 | — | — | Out of scope | — | Not planned |
 

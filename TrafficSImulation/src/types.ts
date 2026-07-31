@@ -110,6 +110,28 @@ export interface PlanRequest {
   congestion: number;
 }
 
+export interface HeatmapRequest {
+  hour: number;
+  congestion: number;
+}
+
+export interface HeatmapCell {
+  row: number;
+  column: number;
+  value: number;
+  bounds: RouteBounds;
+}
+
+export interface HeatmapResult {
+  metric: "congestion";
+  rows: number;
+  columns: number;
+  scenario: Scenario;
+  bounds: RouteBounds;
+  cells: HeatmapCell[];
+  notice: string;
+}
+
 export interface MapConfig {
   maps_browser_api_key: string;
   map_id: string | null;

@@ -1,6 +1,8 @@
 import type {
   ApiError,
   HealthResponse,
+  HeatmapRequest,
+  HeatmapResult,
   MapConfig,
   PlanRequest,
   PlanResult,
@@ -79,6 +81,21 @@ export function postPlan(
 ): Promise<PlanResult> {
   return request<PlanResult>(
     "/api/plan",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    signal,
+  );
+}
+
+export function postHeatmap(
+  body: HeatmapRequest,
+  signal?: AbortSignal,
+): Promise<HeatmapResult> {
+  return request<HeatmapResult>(
+    "/api/heatmap",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
