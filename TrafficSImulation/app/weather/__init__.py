@@ -1,3 +1,3 @@
-from app.weather.service import weather_adjustment
+from app.weather.service import WeatherService, WeatherState, weather_adjustment
 
-__all__ = ["weather_adjustment"]
+__all__ = ["WeatherService", "WeatherState", "weather_adjustment"]
