@@ -66,8 +66,6 @@ PLANNING_FORBIDDEN_IMPORT_ROOTS = {
 MODE_LITERAL_ALLOWLIST = {
     APP_ROOT / "api" / "mode_policy.py",
     APP_ROOT / "api" / "models.py",
-    # Removed in prompt 21; listed so the default suite stays green until decommission.
-    APP_ROOT / "api" / "legacy_routes.py",
 }
 
 MODE_LITERAL_PATTERN = re.compile(r"""['"]simulated['"]|['"]realtime['"]""")
@@ -187,9 +185,6 @@ def test_t46_mode_literals_are_confined_to_allowlist() -> None:
 
 
 def test_t56_google_maps_usage_confined_to_map_components() -> None:
-    if not any(path.exists() for path in GOOGLE_MAPS_ALLOWLIST):
-        pytest.skip("Deferred until prompt 15 adds the four map components")
-
     violations: list[str] = []
     for path in sorted(SRC_ROOT.rglob("*.tsx")):
         if "node_modules" in path.parts:

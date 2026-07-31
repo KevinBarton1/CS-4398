@@ -167,7 +167,7 @@ TYPESCRIPT_TYPE_ALIASES = {
         "TRAFFIC_JAM",
         "SPEED_UNSPECIFIED",
     },
-    "RequestState": {"idle", "loading", "success", "error"},
+    "RequestState": {"idle", "loading", "success", "empty", "error"},
 }
 
 

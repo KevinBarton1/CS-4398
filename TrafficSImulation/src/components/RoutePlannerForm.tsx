@@ -26,7 +26,7 @@ export function RoutePlannerForm({
     <section className="block search">
       <span className="eyebrow">Route planner</span>
       <h1>Find the better drive.</h1>
-      <p>Compare traffic, demand and earning potential before you move.</p>
+      <p>Compare traffic-aware routes and fares before you move.</p>
       <form onSubmit={onSubmit}>
         <label htmlFor="origin">Starting point</label>
         <div className="input">
