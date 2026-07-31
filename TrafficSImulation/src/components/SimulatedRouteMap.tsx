@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { APIProvider, Map } from "@vis.gl/react-google-maps";
+import { getMapConfig } from "../api/client";
 import type { RouteOption } from "../types";
 import { defaultMapCenter, MapBoundsFitter, RoutePolylines } from "./RoutePolylines";
 
@@ -14,10 +15,12 @@ interface SimulatedRouteMapProps {
 }
 
 async function fetchMapsApiKey(): Promise<string | null> {
-  const response = await fetch("/api/map/config");
-  if (!response.ok) return null;
-  const body = await response.json();
-  return body.maps_api_key ?? null;
+  try {
+    const config = await getMapConfig();
+    return config.maps_browser_api_key || null;
+  } catch {
+    return null;
+  }
 }
 
 export function SimulatedRouteMap({

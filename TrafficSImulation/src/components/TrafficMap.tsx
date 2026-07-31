@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PlanResult, RouteOption } from "../types";
 import { SimulatedRouteMap } from "./SimulatedRouteMap";
 
@@ -13,31 +13,19 @@ export function TrafficMap({ data, routes = [], selectedId }: TrafficMapProps) {
   const [viewAll, setViewAll] = useState(false);
 
   const isRealtime = data?.mode === "realtime";
-  const directionsUrl = data?.directions_embed_url ?? null;
-
-  const selectedRoute = useMemo(
-    () => routes.find((route) => route.id === selectedId) ?? routes[0],
-    [routes, selectedId]
-  );
 
   useEffect(() => {
     setViewAll(false);
   }, [selectedId]);
 
-  if (isRealtime && directionsUrl) {
+  if (isRealtime) {
     return (
       <section
         ref={shellRef}
         className="map-shell realtime"
         aria-label="Google Maps real-time directions"
       >
-        <iframe
-          key={directionsUrl}
-          title={`Real-time directions from ${data?.origin ?? "origin"} to ${data?.destination ?? "destination"}`}
-          src={directionsUrl}
-          referrerPolicy="strict-origin-when-cross-origin"
-          allowFullScreen
-        />
+        <p className="map-placeholder">{data?.notice ?? "Real-Time route view loading."}</p>
       </section>
     );
   }
@@ -50,7 +38,7 @@ export function TrafficMap({ data, routes = [], selectedId }: TrafficMapProps) {
         <SimulatedRouteMap
           routes={routes}
           selectedId={selectedId}
-          congestion={data?.congestion ?? 56}
+          congestion={data?.scenario.congestion ?? 56}
           weatherSeverity={data?.weather.severity ?? 0}
           viewAll={viewAll}
           onViewAll={() => setViewAll(true)}

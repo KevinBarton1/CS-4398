@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { postPlan } from "../api/client";
 import { defaultScenario } from "../constants/scenario";
 import type { Mode, PlanResult, RouteOption, Scenario } from "../types";
 
@@ -17,13 +18,7 @@ export function useRoutePlan() {
     setLoading(true);
     setMessage("");
     try {
-      const response = await fetch("/api/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin, destination, mode, ...scenario }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.detail || "Route calculation failed.");
+      const result = await postPlan({ origin, destination, mode, ...scenario });
       setData(result);
       setSelectedId((current) =>
         keepSelection && result.routes.some((r: RouteOption) => r.id === current)

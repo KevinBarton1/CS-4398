@@ -14,7 +14,7 @@ interface AnalysisProps {
 export function Analysis({ route, recommended, mode, scenario, setScenario, onReset }: AnalysisProps) {
   if (!route) return <aside className="analysis skeleton" />;
 
-  const factors = route.factors;
+  const factors = route.price_factors;
 
   const control = (
     key: keyof Scenario,

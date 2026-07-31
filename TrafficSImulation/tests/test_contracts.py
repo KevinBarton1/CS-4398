@@ -21,14 +21,13 @@ from app.api.models import (
     ValidationField,
     WeatherState,
 )
+from app.config import DEFAULT_CONGESTION, DEFAULT_HOUR, DEFAULT_WEATHER
 from app.map.health import ProbeResult
 from app.map.types import LatLngPoint, RouteBounds, TrafficInterval
 
 ROOT = Path(__file__).resolve().parents[1]
 TYPES_TS = ROOT / "src" / "types.ts"
-
-# Set to True in prompt 13 after src/types.ts mirrors app/api/models.py.
-TYPESCRIPT_MIRROR_ENABLED = False
+SCENARIO_TS = ROOT / "src" / "constants" / "scenario.ts"
 
 LOCKED_MODEL_FIELDS: dict[str, set[str]] = {
     "PlanResponse": {
@@ -121,6 +120,24 @@ LOCKED_MODEL_FIELDS: dict[str, set[str]] = {
     },
 }
 
+TYPESCRIPT_INTERFACE_MIRROR: dict[str, tuple[str, set[str]]] = {
+    "PlanResponse": ("PlanResult", LOCKED_MODEL_FIELDS["PlanResponse"]),
+    "RouteOption": ("RouteOption", LOCKED_MODEL_FIELDS["RouteOption"]),
+    "PriceFactors": ("PriceFactors", LOCKED_MODEL_FIELDS["PriceFactors"]),
+    "RoadSegment": ("RoadSegment", LOCKED_MODEL_FIELDS["RoadSegment"]),
+    "Scenario": ("Scenario", LOCKED_MODEL_FIELDS["Scenario"]),
+    "WeatherState": ("WeatherState", LOCKED_MODEL_FIELDS["WeatherState"]),
+    "MapConfigResponse": ("MapConfig", LOCKED_MODEL_FIELDS["MapConfigResponse"]),
+    "HealthResponse": ("HealthResponse", LOCKED_MODEL_FIELDS["HealthResponse"]),
+    "PlanRequest": ("PlanRequest", LOCKED_MODEL_FIELDS["PlanRequest"]),
+    "ErrorResponse": ("ApiError", LOCKED_MODEL_FIELDS["ErrorResponse"]),
+    "ValidationField": ("ValidationField", LOCKED_MODEL_FIELDS["ValidationField"]),
+    "LatLngPoint": ("LatLngPoint", LOCKED_MODEL_FIELDS["LatLngPoint"]),
+    "RouteBounds": ("RouteBounds", LOCKED_MODEL_FIELDS["RouteBounds"]),
+    "TrafficInterval": ("TrafficInterval", LOCKED_MODEL_FIELDS["TrafficInterval"]),
+    "ProbeResult": ("ProbeResult", LOCKED_MODEL_FIELDS["ProbeResult"]),
+}
+
 MODEL_BY_NAME: dict[str, type[BaseModel]] = {
     "PlanResponse": PlanResponse,
     "Scenario": Scenario,
@@ -142,6 +159,17 @@ DATACLASS_MODELS = {
     "RouteBounds": RouteBounds,
 }
 
+TYPESCRIPT_TYPE_ALIASES = {
+    "Mode": {"simulated", "realtime"},
+    "TrafficSpeed": {
+        "NORMAL",
+        "SLOW",
+        "TRAFFIC_JAM",
+        "SPEED_UNSPECIFIED",
+    },
+    "RequestState": {"idle", "loading", "success", "error"},
+}
+
 
 def _pydantic_field_names(model: type[BaseModel]) -> set[str]:
     return set(model.model_fields.keys())
@@ -151,6 +179,36 @@ def _dataclass_field_names(model: type[object]) -> set[str]:
     import dataclasses
 
     return {field.name for field in dataclasses.fields(model)}  # type: ignore[arg-type]
+
+
+def _parse_typescript_interface(source: str, interface_name: str) -> set[str]:
+    match = re.search(
+        rf"export interface {interface_name}\s*\{{([^}}]+)\}}",
+        source,
+        re.DOTALL,
+    )
+    assert match, f"Missing interface {interface_name} in src/types.ts"
+    return {
+        line.split(":")[0].strip()
+        for line in match.group(1).splitlines()
+        if line.strip() and not line.strip().startswith("//")
+    }
+
+
+def _parse_typescript_type_alias(source: str, alias_name: str) -> set[str]:
+    match = re.search(
+        rf"export type {alias_name} = (.+?);",
+        source,
+        re.DOTALL,
+    )
+    assert match, f"Missing type alias {alias_name} in src/types.ts"
+    return set(re.findall(r'"([^"]+)"', match.group(1)))
+
+
+def _parse_typescript_const(source: str, name: str) -> int:
+    match = re.search(rf"export const {name} = (\d+);", source)
+    assert match, f"Missing constant {name}"
+    return int(match.group(1))
 
 
 @pytest.mark.parametrize("model_name", sorted(MODEL_BY_NAME))
@@ -183,33 +241,39 @@ def test_t24_plan_response_has_no_legacy_embed_fields() -> None:
     assert forbidden.isdisjoint(PlanResponse.model_fields.keys())
 
 
-def test_t24_typescript_mirror_extension_point() -> None:
-    """Enable by setting TYPESCRIPT_MIRROR_ENABLED after prompt 13."""
-    if not TYPESCRIPT_MIRROR_ENABLED:
-        pytest.skip("TypeScript mirror assertion deferred to prompt 13")
-
-    assert TYPES_TS.exists(), "src/types.ts must exist for the mirror assertion"
-
-    expected_interfaces = {
-        "PlanResult": LOCKED_MODEL_FIELDS["PlanResponse"],
-        "RouteOption": LOCKED_MODEL_FIELDS["RouteOption"],
-        "PriceFactors": LOCKED_MODEL_FIELDS["PriceFactors"],
-        "Scenario": LOCKED_MODEL_FIELDS["Scenario"],
-        "MapConfig": LOCKED_MODEL_FIELDS["MapConfigResponse"],
-    }
+@pytest.mark.parametrize(
+    ("python_model", "typescript_name", "expected_fields"),
+    [
+        (python_model, ts_name, fields)
+        for python_model, (ts_name, fields) in TYPESCRIPT_INTERFACE_MIRROR.items()
+    ],
+)
+def test_t24_typescript_interfaces_mirror_python_models(
+    python_model: str,
+    typescript_name: str,
+    expected_fields: set[str],
+) -> None:
+    del python_model
     source = TYPES_TS.read_text(encoding="utf-8")
+    declared = _parse_typescript_interface(source, typescript_name)
+    assert declared == expected_fields
 
-    for interface_name, fields in expected_interfaces.items():
-        match = re.search(
-            rf"export interface {interface_name}\s*\{{([^}}]+)\}}",
-            source,
-            re.DOTALL,
-        )
-        assert match, f"Missing interface {interface_name} in src/types.ts"
-        declared = {
-            line.split(":")[0].strip()
-            for line in match.group(1).splitlines()
-            if line.strip() and not line.strip().startswith("//")
-        }
-        assert declared == fields
 
+@pytest.mark.parametrize(
+    ("alias_name", "expected_literals"),
+    sorted(TYPESCRIPT_TYPE_ALIASES.items()),
+)
+def test_t24_typescript_type_aliases_are_declared(
+    alias_name: str,
+    expected_literals: set[str],
+) -> None:
+    source = TYPES_TS.read_text(encoding="utf-8")
+    declared = _parse_typescript_type_alias(source, alias_name)
+    assert declared == expected_literals
+
+
+def test_t24_scenario_defaults_match_python() -> None:
+    source = SCENARIO_TS.read_text(encoding="utf-8")
+    assert _parse_typescript_const(source, "DEFAULT_HOUR") == DEFAULT_HOUR
+    assert _parse_typescript_const(source, "DEFAULT_WEATHER") == DEFAULT_WEATHER
+    assert _parse_typescript_const(source, "DEFAULT_CONGESTION") == DEFAULT_CONGESTION

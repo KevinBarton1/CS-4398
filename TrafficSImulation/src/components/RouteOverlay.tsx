@@ -1,4 +1,5 @@
-import type { MapView, RouteOption } from "../types";
+import type { RouteOption } from "../types";
+import type { MapView } from "../utils/mapProjection";
 import { polylineToPath } from "../utils/mapProjection";
 import { segmentColor } from "../utils/segmentColor";
 
