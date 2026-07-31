@@ -6,7 +6,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.models import MapEmbedRequest, PlanRequest
+from app.api.legacy_models import MapEmbedRequest
+from app.api.models import PlanRequest
 from app.api.routes import plan_route
 from app.config import GOOGLE_MAPS_API_KEY
 from app.map.google_embed import build_map_embed_url
