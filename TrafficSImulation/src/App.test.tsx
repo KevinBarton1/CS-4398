@@ -4,9 +4,7 @@ import { vi } from "vitest";
 import { App } from "./App";
 import type { PlanResult, RouteOption } from "./types";
 
-vi.mock("./components/SimulatedRouteMap", () => ({
-  SimulatedRouteMap: () => <div role="application" aria-label="Simulated route map" />,
-}));
+vi.mock("@vis.gl/react-google-maps", () => import("./test/googleMapsMock.tsx"));
 
 const segmentPolyline = [
   { lat: 30.2672, lng: -97.7431 },
@@ -133,9 +131,7 @@ test("renders the required hierarchy and API results", async () => {
   expect(screen.getByRole("button", { name: /Plan Route/ })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Fastest" })).toBeInTheDocument();
   expect(screen.getByText("Riverside Dr")).toBeInTheDocument();
-  await waitFor(() =>
-    expect(screen.getByRole("application", { name: "Simulated route map" })).toBeInTheDocument()
-  );
+  await waitFor(() => expect(screen.getByTestId("google-map")).toHaveClass("route-map"));
   expect(container.querySelector(".route-overlay")).not.toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Shape conditions" })).toBeInTheDocument();
 });
@@ -146,9 +142,9 @@ test("realtime mode hides simulation controls", async () => {
 
   fireEvent.click(screen.getByRole("button", { name: "Real-Time" }));
 
-  await waitFor(() =>
-    expect(container.querySelector(".map-shell.realtime")).toBeInTheDocument()
-  , { timeout: 3000 });
+  await waitFor(() => expect(screen.getByTestId("google-map")).toBeInTheDocument(), {
+    timeout: 3000,
+  });
   expect(screen.getByRole("button", { name: "Real-Time" })).toHaveClass("active");
   expect(container.querySelector(".source")).toHaveTextContent("Real-Time");
   expect(screen.getByText("Route comparison is available in Simulated mode.")).toBeInTheDocument();

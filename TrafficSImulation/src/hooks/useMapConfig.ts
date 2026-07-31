@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ApiClientError, getMapConfig } from "../api/client";
 import type { ApiError, MapConfig, RequestState } from "../types";
 
@@ -44,6 +44,24 @@ function fetchMapConfigOnce(): Promise<void> {
   return inflight;
 }
 
+function applyCachedState(
+  setConfig: (value: MapConfig | null) => void,
+  setError: (value: ApiError | null) => void,
+  setStatus: (value: RequestState) => void,
+): void {
+  if (cachedConfig) {
+    setConfig(cachedConfig);
+    setError(null);
+    setStatus("success");
+    return;
+  }
+  if (cachedError) {
+    setConfig(null);
+    setError(cachedError);
+    setStatus("error");
+  }
+}
+
 export function useMapConfig() {
   const [config, setConfig] = useState<MapConfig | null>(cachedConfig);
   const [error, setError] = useState<ApiError | null>(cachedError);
@@ -55,31 +73,29 @@ export function useMapConfig() {
 
   useEffect(() => {
     if (cachedConfig) {
-      setConfig(cachedConfig);
-      setError(null);
-      setStatus("success");
+      applyCachedState(setConfig, setError, setStatus);
       return;
     }
     if (cachedError) {
-      setConfig(null);
-      setError(cachedError);
-      setStatus("error");
+      applyCachedState(setConfig, setError, setStatus);
       return;
     }
 
     setStatus("loading");
     void fetchMapConfigOnce().then(() => {
-      if (cachedConfig) {
-        setConfig(cachedConfig);
-        setError(null);
-        setStatus("success");
-      } else if (cachedError) {
-        setConfig(null);
-        setError(cachedError);
-        setStatus("error");
-      }
+      applyCachedState(setConfig, setError, setStatus);
     });
   }, []);
 
-  return { config, status, error };
+  const retry = useCallback(() => {
+    resetMapConfigCache();
+    setConfig(null);
+    setError(null);
+    setStatus("loading");
+    void fetchMapConfigOnce().then(() => {
+      applyCachedState(setConfig, setError, setStatus);
+    });
+  }, []);
+
+  return { config, status, error, retry };
 }

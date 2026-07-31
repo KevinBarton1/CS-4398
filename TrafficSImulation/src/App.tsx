@@ -1,9 +1,10 @@
 import { Analysis } from "./components/Analysis";
 import { Header } from "./components/Header";
+import { MapConfigProvider } from "./components/MapConfigProvider";
+import { RouteMap } from "./components/RouteMap";
 import { RouteOptions } from "./components/RouteOptions";
 import { RoutePlanner } from "./components/RoutePlanner";
 import { Toast } from "./components/Toast";
-import { TrafficMap } from "./components/TrafficMap";
 import { useRoutePlan } from "./hooks/useRoutePlan";
 
 export function App() {
@@ -50,7 +51,17 @@ export function App() {
             onSelect={setSelectedId}
           />
         </aside>
-        <TrafficMap data={data} routes={data?.routes} selectedId={selectedId} />
+        <MapConfigProvider>
+          <RouteMap
+            routes={data?.routes ?? []}
+            selectedRouteId={selectedId}
+            planBounds={data?.map_bounds}
+            plan={data}
+            congestion={data?.scenario_applied ? scenario.congestion : 0}
+            weatherSeverity={data?.scenario_applied ? (data?.weather.severity ?? 0) : 0}
+            selectedRoute={selectedRoute}
+          />
+        </MapConfigProvider>
         <Analysis
           route={selectedRoute}
           recommended={data?.recommended_route_id}
