@@ -70,6 +70,7 @@ describe("App composition", () => {
     expect(screen.getByText("Recommended")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Route map" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId("google-map")).toHaveClass("route-map"));
+    expect(screen.getByText(/Fastest route, 21\.7 min, 6\.9 mi/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Shape conditions" })).toBeInTheDocument();
     expect(screen.getByText("Riverside Dr")).toBeInTheDocument();
   });
@@ -153,10 +154,26 @@ describe("App composition", () => {
     );
   });
 
-  it("T-36 baseline: keyboard traversal of the mode switch and route cards", async () => {
+  it("T-36: keyboard traversal of the mode switch and route cards", async () => {
     render(<App />);
 
+    expect(screen.getByRole("link", { name: "Skip to main content" })).toHaveAttribute(
+      "href",
+      "#main-content",
+    );
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+    expect(screen.getByRole("main")).toBeInTheDocument();
+    expect(screen.getAllByRole("complementary")).toHaveLength(2);
+    expect(screen.getByRole("complementary", { name: "Trip planning" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Route analysis" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Planning mode" })).toBeInTheDocument();
+
     await waitFor(() => expect(screen.getByRole("heading", { name: "Fastest" })).toBeInTheDocument());
+
+    const fastestCard = screen.getByRole("button", { name: /Fastest/i });
+    expect(fastestCard).toHaveAccessibleName(/21\.7 min/i);
+    expect(fastestCard).toHaveAccessibleName(/6\.9 mi/i);
+    expect(fastestCard).toHaveAccessibleName(/\$31\.11/i);
 
     const realtimeButton = screen.getByRole("button", { name: "Real-Time" });
     realtimeButton.focus();
@@ -164,6 +181,9 @@ describe("App composition", () => {
     fireEvent.click(realtimeButton);
     await waitFor(() => expect(realtimeButton).toHaveAttribute("aria-pressed", "true"));
     expect(document.activeElement).toBe(realtimeButton);
+    await waitFor(() => expect(screen.queryByRole("button", { name: /Fastest/i })).not.toBeInTheDocument(), {
+      timeout: 3000,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Simulated" }));
     await waitFor(() => expect(screen.getByRole("button", { name: /Balanced/i })).toBeInTheDocument(), {
@@ -177,9 +197,10 @@ describe("App composition", () => {
     await waitFor(() => {
       expect(balancedCard).toHaveAttribute("aria-pressed", "true");
     });
+    expect(document.activeElement).toBe(balancedCard);
   });
 
-  it("T-37 baseline: live-region announcements for loading and error", async () => {
+  it("T-37: live-region announcements for loading and error", async () => {
     fetchMock.mockImplementation(async (input: RequestInfo) => {
       const url = String(input);
       if (url.includes("/api/map/config")) {
@@ -207,8 +228,19 @@ describe("App composition", () => {
 
     render(<App />);
 
-    await waitFor(() => expect(screen.getByLabelText("Request status")).toHaveTextContent("Planning"));
-    await waitFor(() => expect(screen.getByLabelText("Request status")).toHaveTextContent("Problem"));
+    const statusRegion = screen.getByLabelText("Request status");
+    expect(statusRegion).toHaveAttribute("aria-live", "polite");
+    expect(statusRegion).toHaveAttribute("aria-atomic", "true");
+    await waitFor(() => expect(statusRegion).toHaveTextContent("Planning"));
+    await waitFor(() => expect(statusRegion).toHaveTextContent("Problem"));
     expect(screen.getByRole("alert")).toHaveTextContent("Could not resolve the starting location.");
+  });
+
+  it("T-37: announces plan ready after a successful request", async () => {
+    render(<App />);
+
+    const statusRegion = screen.getByLabelText("Request status");
+    await waitFor(() => expect(statusRegion).toHaveTextContent("Planning"));
+    await waitFor(() => expect(statusRegion).toHaveTextContent("Plan ready"));
   });
 });

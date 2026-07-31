@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   APILoadingStatus,
   ColorScheme,
@@ -24,11 +24,31 @@ interface RouteMapProps {
   onToggleViewAll: () => void;
 }
 
-function formatMapSummary(route?: RouteOption): string {
+function countTrafficIntervals(route: RouteOption, speed: string): number {
+  return route.traffic_intervals.filter((interval) => interval.speed === speed).length;
+}
+
+function formatStretchCount(count: number, label: string): string {
+  return `${count} ${label} stretch${count === 1 ? "" : "es"}`;
+}
+
+export function formatMapDescription(route?: RouteOption): string {
   if (!route) {
     return "No route selected.";
   }
-  return `${route.name}: ${route.adjusted_eta_minutes} minutes, ${route.distance_miles} miles, estimated fare $${route.estimated_price.toFixed(2)}.`;
+
+  const slow = countTrafficIntervals(route, "SLOW");
+  const heavy = countTrafficIntervals(route, "TRAFFIC_JAM");
+  const stretchParts: string[] = [];
+  if (slow > 0) {
+    stretchParts.push(formatStretchCount(slow, "slow"));
+  }
+  if (heavy > 0) {
+    stretchParts.push(formatStretchCount(heavy, "heavy"));
+  }
+  const stretchSummary = stretchParts.length > 0 ? `, ${stretchParts.join(" and ")}` : "";
+
+  return `${route.name} route, ${route.adjusted_eta_minutes.toFixed(1)} min, ${route.distance_miles.toFixed(1)} mi${stretchSummary}`;
 }
 
 export function RouteMap({
@@ -45,6 +65,7 @@ export function RouteMap({
   const { config } = useMapConfig();
   const apiStatus = useApiLoadingStatus();
   const [apiRetryKey, setApiRetryKey] = useState(0);
+  const descriptionId = useId();
 
   if (!config) {
     return null;
@@ -52,7 +73,7 @@ export function RouteMap({
 
   if (apiStatus === APILoadingStatus.FAILED) {
     return (
-      <section className="map-shell" aria-label="Google Maps route view">
+      <div className="map-shell">
         <StatusBanner
           variant="error"
           detail="The Google Maps script could not be loaded."
@@ -60,14 +81,15 @@ export function RouteMap({
           onRetry={() => setApiRetryKey((current) => current + 1)}
           region="map"
         />
-      </section>
+      </div>
     );
   }
 
   const hasDrawableRoutes = routes.some((route) => route.polyline.length > 1);
+  const mapDescription = formatMapDescription(selectedRoute);
 
   return (
-    <section className="map-shell" aria-label="Google Maps route view">
+    <div className="map-shell" aria-describedby={descriptionId}>
       <Map
         key={apiRetryKey}
         className="route-map"
@@ -109,11 +131,13 @@ export function RouteMap({
           View all
         </button>
       ) : null}
-      <p className="visually-hidden">{formatMapSummary(selectedRoute)}</p>
+      <p id={descriptionId} className="visually-hidden">
+        {mapDescription}
+      </p>
       {!hasDrawableRoutes ? (
         <p className="map-placeholder">{plan?.notice ?? "Enter two locations to compare routes."}</p>
       ) : null}
-    </section>
+    </div>
   );
 }
 
@@ -125,8 +149,8 @@ export function RouteMapUnavailable({
   onRetry?: () => void;
 }) {
   return (
-    <section className="map-shell" aria-label="Google Maps route view">
+    <div className="map-shell">
       <StatusBanner variant="error" error={error} onRetry={onRetry} region="map" />
-    </section>
+    </div>
   );
 }

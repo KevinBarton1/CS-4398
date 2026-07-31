@@ -71,6 +71,7 @@ export function ScenarioControls({ scenario, setScenario, onReset }: ScenarioCon
             max={max}
             step={1}
             value={scenario[key]}
+            aria-valuetext={format(scenario)}
             onChange={(event) =>
               setScenario({ ...scenario, [key]: Number(event.target.value) })
             }

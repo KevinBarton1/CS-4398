@@ -3,6 +3,7 @@ import { PriceSummary } from "./PriceSummary";
 import { SegmentTable } from "./SegmentTable";
 import type { Mode, RouteOption, Scenario, WeatherState } from "../types";
 import {
+  formatCurrency,
   formatMiles,
   formatMinutes,
   formatNormalizedScore,
@@ -50,9 +51,13 @@ export function AnalysisPanel({
   }
 
   const modeLabel = mode === "realtime" ? "Real-Time" : "Simulated";
+  const resultSummary = `${route.name}, ${formatMinutes(route.adjusted_eta_minutes)} adjusted ETA, ${formatMiles(route.distance_miles)}, ${formatCurrency(route.estimated_price)}`;
 
   return (
     <>
+      <p className="visually-hidden" aria-live="polite" aria-atomic="true">
+        {resultSummary}
+      </p>
       <section className="card trip-context">
         {origin && destination && (
           <p className="trip-line">{`${origin} to ${destination}`}</p>

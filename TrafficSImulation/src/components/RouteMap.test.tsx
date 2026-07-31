@@ -129,6 +129,56 @@ describe("RouteMap and MapConfigProvider", () => {
       JSON.stringify(["core", "maps"]),
     );
     expect(screen.getByTestId("google-map")).toHaveClass("route-map");
+    expect(screen.getByText(/Fastest route, 21\.7 min, 6\.9 mi/)).toBeInTheDocument();
+  });
+
+  it("T-31: exposes map description with non-normal traffic interval counts", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        maps_browser_api_key: "browser-key",
+        map_id: null,
+        default_center: { lat: 30.2672, lng: -97.7431 },
+        default_zoom: 12,
+        color_scheme: "DARK",
+        libraries: ["core", "maps"],
+      }),
+    });
+
+    const routeWithTraffic = {
+      ...baseRoute,
+      traffic_intervals: [
+        { start_index: 0, end_index: 1, speed: "SLOW" },
+        { start_index: 1, end_index: 2, speed: "SLOW" },
+        { start_index: 2, end_index: 3, speed: "TRAFFIC_JAM" },
+      ],
+    };
+
+    const { MapConfigProvider } = await import("./MapConfigProvider");
+    const { RouteMap } = await import("./RouteMap");
+
+    render(
+      <MapConfigProvider>
+        <section aria-label="Route map">
+          <RouteMap
+            routes={[routeWithTraffic]}
+            selectedRouteId="route-1"
+            planBounds={plan.map_bounds}
+            plan={plan}
+            congestion={56}
+            weatherSeverity={1}
+            selectedRoute={routeWithTraffic}
+            viewAll={false}
+            onToggleViewAll={() => undefined}
+          />
+        </section>
+      </MapConfigProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("google-map")).toBeInTheDocument());
+    expect(
+      screen.getByText("Fastest route, 21.7 min, 6.9 mi, 2 slow stretches and 1 heavy stretch"),
+    ).toBeInTheDocument();
   });
 
   it("T-31: contains config failures to the map region", async () => {

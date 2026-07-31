@@ -12,9 +12,9 @@ export function MapConfigProvider({ children }: MapConfigProviderProps) {
 
   if (status === "loading" || status === "idle") {
     return (
-      <section className="map-shell" aria-label="Google Maps route view">
+      <div className="map-shell">
         <p className="map-placeholder">Loading map configuration...</p>
-      </section>
+      </div>
     );
   }
 

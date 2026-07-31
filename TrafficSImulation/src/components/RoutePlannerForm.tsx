@@ -55,9 +55,12 @@ export function RoutePlannerForm({
             required
             maxLength={120}
             autoComplete="off"
+            aria-describedby="destination-hint"
           />
         </div>
-        <small>Try: The Domain, UT Austin, Zilker Park, Mueller, South Congress</small>
+        <small id="destination-hint">
+          Try: The Domain, UT Austin, Zilker Park, Mueller, South Congress
+        </small>
         <button className="primary" type="submit" disabled={loading}>
           <span>{loading ? "Planning..." : "Plan routes"}</span>
           <span aria-hidden="true">→</span>

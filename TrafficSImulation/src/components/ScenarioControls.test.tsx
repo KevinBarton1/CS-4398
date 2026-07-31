@@ -26,6 +26,10 @@ describe("ScenarioControls", () => {
     expect(hourSlider).toHaveAttribute("step", "1");
     expect(hourSlider.value).toBe("17");
 
+    expect(hourSlider).toHaveAttribute("aria-valuetext", "5:00 PM");
+    expect(weatherSlider).toHaveAttribute("aria-valuetext", "Light rain");
+    expect(congestionSlider).toHaveAttribute("aria-valuetext", "56%");
+
     expect(weatherSlider).toHaveAttribute("min", "0");
     expect(weatherSlider).toHaveAttribute("max", "3");
     expect(weatherSlider).toHaveAttribute("step", "1");
