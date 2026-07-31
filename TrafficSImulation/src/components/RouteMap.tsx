@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   APILoadingStatus,
   ColorScheme,
@@ -20,6 +20,8 @@ interface RouteMapProps {
   congestion: number;
   weatherSeverity: number;
   selectedRoute?: RouteOption;
+  viewAll: boolean;
+  onToggleViewAll: () => void;
 }
 
 function formatMapSummary(route?: RouteOption): string {
@@ -37,15 +39,12 @@ export function RouteMap({
   congestion,
   weatherSeverity,
   selectedRoute,
+  viewAll,
+  onToggleViewAll,
 }: RouteMapProps) {
   const { config } = useMapConfig();
   const apiStatus = useApiLoadingStatus();
-  const [viewAll, setViewAll] = useState(false);
   const [apiRetryKey, setApiRetryKey] = useState(0);
-
-  useEffect(() => {
-    setViewAll(false);
-  }, [selectedRouteId]);
 
   if (!config) {
     return null;
@@ -105,7 +104,7 @@ export function RouteMap({
           type="button"
           className={`map-view-all${viewAll ? " active" : ""}`}
           aria-pressed={viewAll}
-          onClick={() => setViewAll((current) => !current)}
+          onClick={onToggleViewAll}
         >
           View all
         </button>

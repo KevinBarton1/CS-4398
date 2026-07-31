@@ -294,4 +294,53 @@ describe("useRoutePlan", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
+
+  it("T-35: geolocation grant fills origin with five-decimal coordinates", () => {
+    const getCurrentPosition = vi.fn((success: PositionCallback) => {
+      success({
+        coords: {
+          latitude: 30.267204,
+          longitude: -97.743057,
+          accuracy: 0,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null,
+        },
+        timestamp: Date.now(),
+      });
+    });
+
+    vi.stubGlobal("navigator", { geolocation: { getCurrentPosition } });
+
+    const { result } = renderHook(() => useRoutePlan());
+    act(() => {
+      result.current.useCurrentLocation();
+    });
+
+    expect(getCurrentPosition).toHaveBeenCalledOnce();
+    expect(result.current.origin).toBe("30.26720, -97.74306");
+
+    vi.unstubAllGlobals();
+  });
+
+  it("T-35: geolocation denial surfaces an informational toast", () => {
+    const getCurrentPosition = vi.fn((_success: PositionCallback, error: PositionErrorCallback) => {
+      error({ code: 1, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3, message: "denied" });
+    });
+
+    vi.stubGlobal("navigator", { geolocation: { getCurrentPosition } });
+
+    const { result } = renderHook(() => useRoutePlan());
+    act(() => {
+      result.current.useCurrentLocation();
+    });
+
+    expect(result.current.toast?.detail).toBe(
+      "Location permission was denied. Enter a starting point manually.",
+    );
+    expect(result.current.origin).toBe("Downtown Austin");
+
+    vi.unstubAllGlobals();
+  });
 });

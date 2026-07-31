@@ -116,6 +116,8 @@ describe("RouteMap and MapConfigProvider", () => {
           congestion={56}
           weatherSeverity={1}
           selectedRoute={baseRoute}
+          viewAll={false}
+          onToggleViewAll={() => undefined}
         />
       </MapConfigProvider>,
     );
@@ -152,6 +154,8 @@ describe("RouteMap and MapConfigProvider", () => {
           congestion={0}
           weatherSeverity={0}
           selectedRoute={baseRoute}
+          viewAll={false}
+          onToggleViewAll={() => undefined}
         />
       </MapConfigProvider>,
     );

@@ -1,74 +1,78 @@
-import { useMemo, useState } from "react";
 import { AnalysisPanel } from "./components/AnalysisPanel";
-import { Header } from "./components/Header";
+import { AppHeader } from "./components/AppHeader";
 import { MapConfigProvider } from "./components/MapConfigProvider";
 import { RouteMap } from "./components/RouteMap";
 import { RouteOptionList } from "./components/RouteOptionList";
 import { RoutePlannerForm } from "./components/RoutePlannerForm";
-import { StatusBanner } from "./components/StatusBanner";
-import { Toast, type ToastMessage } from "./components/Toast";
+import { shouldShowPlanErrorAsToast, StatusBanner } from "./components/StatusBanner";
+import { Toast } from "./components/Toast";
 import { useRoutePlan } from "./hooks/useRoutePlan";
 
 export function App() {
-  const [notice, setNotice] = useState<ToastMessage | null>(null);
   const {
     origin,
-    setOrigin,
     destination,
-    setDestination,
     mode,
-    setMode,
     scenario,
-    setScenario,
     plan,
-    selectedId,
-    setSelectedId,
+    routes,
+    selectedRouteId,
     selectedRoute,
-    loading,
+    scenarioApplied,
+    effectiveScenario,
     status,
-    bannerError,
-    toastFromError,
-    planStale,
+    error,
+    toast,
+    viewAll,
+    setOrigin,
+    setDestination,
+    setMode,
+    setScenario,
+    resetScenario,
+    selectRoute,
+    toggleViewAll,
     submit,
     retry,
-    resetScenario,
-    dismissError,
+    useCurrentLocation,
+    dismissToast,
   } = useRoutePlan();
-
-  const scenarioApplied = plan?.scenario_applied ?? mode === "simulated";
-  const toastMessage = useMemo<ToastMessage | null>(() => {
-    if (notice) {
-      return notice;
-    }
-    return toastFromError;
-  }, [notice, toastFromError]);
 
   const showLoadingBanner = status === "loading" && !plan;
   const showEmptyBanner = status === "empty";
-  const showErrorBanner = status === "error" && bannerError !== null;
+  const showErrorBanner =
+    status === "error" && error !== null && !shouldShowPlanErrorAsToast(error, plan !== null);
+  const planStale = status === "error" && plan !== null;
 
   return (
     <>
-      <Header mode={mode} onModeChange={setMode} loading={loading} />
-      <main>
-        <aside className="planner">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      <AppHeader
+        mode={mode}
+        status={status}
+        hasPlan={plan !== null}
+        onModeChange={setMode}
+      />
+      <main id="main-content">
+        <aside className="planner" aria-label="Trip planning">
           <RoutePlannerForm
             origin={origin}
             destination={destination}
-            setOrigin={setOrigin}
-            setDestination={setDestination}
-            loading={loading}
+            status={status}
+            onOriginChange={setOrigin}
+            onDestinationChange={setDestination}
             onSubmit={submit}
-            onNotice={(message) =>
-              setNotice({ detail: message, variant: "info" })
-            }
+            onUseCurrentLocation={useCurrentLocation}
           />
-          {showLoadingBanner ? <StatusBanner variant="loading" region="planner" /> : null}
+          {showLoadingBanner ? (
+            <StatusBanner variant="loading" region="planner" />
+          ) : null}
           {showEmptyBanner ? (
             <StatusBanner variant="empty" region="planner" onRetry={retry} />
           ) : null}
           {showErrorBanner ? (
-            <StatusBanner variant="error" error={bannerError} region="planner" onRetry={retry} />
+            <StatusBanner variant="error" error={error} region="planner" onRetry={retry} />
           ) : null}
           {planStale ? (
             <p className="stale-marker" role="status">
@@ -76,25 +80,29 @@ export function App() {
             </p>
           ) : null}
           <RouteOptionList
-            routes={plan?.routes ?? []}
-            selectedRouteId={selectedId}
+            routes={routes}
+            selectedRouteId={selectedRouteId}
             recommendedRouteId={plan?.recommended_route_id}
             comparisonEnabled={scenarioApplied}
-            onSelect={setSelectedId}
+            onSelect={selectRoute}
           />
         </aside>
-        <MapConfigProvider>
-          <RouteMap
-            routes={plan?.routes ?? []}
-            selectedRouteId={selectedId}
-            planBounds={plan?.map_bounds}
-            plan={plan}
-            congestion={plan?.scenario_applied ? scenario.congestion : 0}
-            weatherSeverity={plan?.scenario_applied ? (plan?.weather.severity ?? 0) : 0}
-            selectedRoute={selectedRoute}
-          />
-        </MapConfigProvider>
-        <aside className={`analysis${selectedRoute ? "" : " skeleton"}`}>
+        <section className="map" aria-label="Route map">
+          <MapConfigProvider>
+            <RouteMap
+              routes={routes}
+              selectedRouteId={selectedRouteId}
+              planBounds={plan?.map_bounds}
+              plan={plan}
+              congestion={scenarioApplied ? effectiveScenario.congestion : 0}
+              weatherSeverity={scenarioApplied ? (plan?.weather.severity ?? 0) : 0}
+              viewAll={viewAll}
+              onToggleViewAll={toggleViewAll}
+              selectedRoute={selectedRoute}
+            />
+          </MapConfigProvider>
+        </section>
+        <aside className="analysis" aria-label="Route analysis">
           <AnalysisPanel
             route={selectedRoute}
             origin={plan?.origin}
@@ -110,13 +118,7 @@ export function App() {
           />
         </aside>
       </main>
-      <Toast
-        message={toastMessage}
-        onDismiss={() => {
-          setNotice(null);
-          dismissError();
-        }}
-      />
+      <Toast message={toast} onDismiss={dismissToast} />
     </>
   );
 }

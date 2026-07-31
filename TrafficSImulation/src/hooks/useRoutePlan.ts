@@ -8,6 +8,15 @@ import type { ToastMessage } from "../components/Toast";
 import { defaultScenario, SCENARIO_DEBOUNCE_MS } from "../constants/scenario";
 import type { ApiError, Mode, PlanResult, RequestState, Scenario } from "../types";
 
+const GEOLOCATION_OPTIONS: PositionOptions = {
+  enableHighAccuracy: false,
+  timeout: 8000,
+};
+
+function formatCoordinates(latitude: number, longitude: number): string {
+  return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+}
+
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
@@ -44,6 +53,12 @@ export function useRoutePlan() {
   const [selectedRouteId, setSelectedRouteId] = useState<string | undefined>();
   const [status, setStatus] = useState<RequestState>("idle");
   const [error, setError] = useState<ApiError | null>(null);
+  const [viewAll, setViewAll] = useState(false);
+  const [infoToast, setInfoToast] = useState<ToastMessage | null>(null);
+
+  useEffect(() => {
+    setViewAll(false);
+  }, [selectedRouteId]);
 
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<number | undefined>(undefined);
@@ -168,6 +183,40 @@ export function useRoutePlan() {
     setSelectedRouteId(id);
   }, []);
 
+  const toggleViewAll = useCallback(() => {
+    setViewAll((current) => !current);
+  }, []);
+
+  const useCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setInfoToast({
+        detail: "This browser does not provide location access. Enter a starting point manually.",
+        variant: "info",
+      });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setOrigin(formatCoordinates(position.coords.latitude, position.coords.longitude));
+      },
+      (geoError) => {
+        if (geoError.code === geoError.PERMISSION_DENIED) {
+          setInfoToast({
+            detail: "Location permission was denied. Enter a starting point manually.",
+            variant: "info",
+          });
+          return;
+        }
+        setInfoToast({
+          detail: "Could not read your location. Enter a starting point manually.",
+          variant: "info",
+        });
+      },
+      GEOLOCATION_OPTIONS,
+    );
+  }, []);
+
   const dismissError = useCallback(() => {
     setError(null);
     if (planRef.current) {
@@ -175,9 +224,19 @@ export function useRoutePlan() {
     }
   }, []);
 
+  const dismissToast = useCallback(() => {
+    setInfoToast(null);
+    dismissError();
+  }, [dismissError]);
+
+  const routes = useMemo(() => plan?.routes ?? [], [plan]);
+
+  const scenarioApplied = plan?.scenario_applied ?? mode === "simulated";
+  const effectiveScenario = plan?.scenario ?? scenario;
+
   const selectedRoute = useMemo(
-    () => plan?.routes.find((route) => route.id === selectedRouteId) ?? plan?.routes[0],
-    [plan, selectedRouteId],
+    () => routes.find((route) => route.id === selectedRouteId) ?? routes[0],
+    [routes, selectedRouteId],
   );
 
   const loading = status === "loading";
@@ -192,6 +251,7 @@ export function useRoutePlan() {
           onRetry: retry,
         }
       : null;
+  const toast = toastFromError ?? infoToast;
 
   return {
     origin,
@@ -201,20 +261,28 @@ export function useRoutePlan() {
     mode,
     scenario,
     plan,
+    routes,
     selectedRouteId,
     selectedRoute,
+    scenarioApplied,
+    effectiveScenario,
     status,
     error,
+    toast,
     bannerError,
     toastFromError,
     planStale,
     loading,
+    viewAll,
     submit,
     retry,
     setMode,
     setScenario,
     resetScenario,
     selectRoute,
+    toggleViewAll,
+    useCurrentLocation,
+    dismissToast,
     dismissError,
     setSelectedId: selectRoute,
     selectedId: selectedRouteId,

@@ -1,53 +1,26 @@
-import { FormEvent, useCallback } from "react";
+import { FormEvent } from "react";
+import type { RequestState } from "../types";
 
 interface RoutePlannerFormProps {
   origin: string;
   destination: string;
-  setOrigin: (value: string) => void;
-  setDestination: (value: string) => void;
-  loading: boolean;
+  status: RequestState;
+  onOriginChange: (value: string) => void;
+  onDestinationChange: (value: string) => void;
   onSubmit: (event: FormEvent) => void;
-  onNotice: (message: string) => void;
-}
-
-const GEOLOCATION_OPTIONS: PositionOptions = {
-  enableHighAccuracy: false,
-  timeout: 8000,
-};
-
-function formatCoordinates(latitude: number, longitude: number): string {
-  return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+  onUseCurrentLocation: () => void;
 }
 
 export function RoutePlannerForm({
   origin,
   destination,
-  setOrigin,
-  setDestination,
-  loading,
+  status,
+  onOriginChange,
+  onDestinationChange,
   onSubmit,
-  onNotice,
+  onUseCurrentLocation,
 }: RoutePlannerFormProps) {
-  const handleGeolocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      onNotice("This browser does not provide location access. Enter a starting point manually.");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setOrigin(formatCoordinates(position.coords.latitude, position.coords.longitude));
-      },
-      (error) => {
-        if (error.code === error.PERMISSION_DENIED) {
-          onNotice("Location permission was denied. Enter a starting point manually.");
-          return;
-        }
-        onNotice("Could not read your location. Enter a starting point manually.");
-      },
-      GEOLOCATION_OPTIONS,
-    );
-  }, [onNotice, setOrigin]);
+  const loading = status === "loading";
 
   return (
     <section className="block search">
@@ -62,13 +35,13 @@ export function RoutePlannerForm({
             id="origin"
             type="text"
             value={origin}
-            onChange={(event) => setOrigin(event.target.value)}
+            onChange={(event) => onOriginChange(event.target.value)}
             required
             maxLength={120}
             autoComplete="off"
           />
         </div>
-        <button className="link-button" type="button" onClick={handleGeolocation}>
+        <button className="link-button" type="button" onClick={onUseCurrentLocation}>
           Use my current location
         </button>
         <label htmlFor="destination">Destination</label>
@@ -78,7 +51,7 @@ export function RoutePlannerForm({
             id="destination"
             type="text"
             value={destination}
-            onChange={(event) => setDestination(event.target.value)}
+            onChange={(event) => onDestinationChange(event.target.value)}
             required
             maxLength={120}
             autoComplete="off"
