@@ -72,15 +72,15 @@ over rewriting production code. Name each by its catalog ID.
 
 ## Definition Of Done
 
-- [ ] `python -m pytest`, `npm test`, and `npm run build` all pass.
-- [ ] Every architecture overview acceptance criterion is ticked with evidence.
-- [ ] Every P1 Target row in the traceability table has Progress reflecting a passing planned test.
-- [ ] T-01 through T-39, T-42, T-43, T-45, T-46, T-49, T-54, and T-56 are green; T-57 is opt-in only.
-- [ ] Manual smoke of Simulated, Real-Time, mode switch, scenario debounce, map render, and map failure is recorded.
-- [ ] The verification report exists and is attached to the handoff.
-- [ ] No P2 or P3 behavior was introduced.
+- [x] `python -m pytest`, `npm test`, and `npm run build` all pass.
+- [x] Every architecture overview acceptance criterion is ticked with evidence.
+- [x] Every P1 Target row in the traceability table has Progress reflecting a passing planned test.
+- [x] T-01 through T-39, T-42, T-43, T-45, T-46, T-49, T-54, and T-56 are green; T-57 is opt-in only.
+- [x] Manual smoke of Simulated, Real-Time, mode switch, scenario debounce, map render, and map failure is recorded.
+- [x] The verification report exists and is attached to the handoff.
+- [x] No P2 or P3 behavior was introduced.
 
 ## Handoff
 
-Attach the verification report. Call out any P1 requirement that cannot be closed and the reason, so
+Attach [22-p1-verification-report.md](22-p1-verification-report.md). Call out any P1 requirement that cannot be closed and the reason, so
 prompt 23 does not mistake it for P2 scope.

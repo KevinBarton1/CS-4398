@@ -264,12 +264,12 @@ frontend build logs a warning and does not prevent startup.
 
 ## Acceptance Criteria
 
-- [ ] The import graph contains no edge from any module under `app/map/`, `app/simulation/`, `app/pricing/`, `app/weather/`, or `app/heatmap/` into `app/api/` or `main`.
-- [ ] `app/api/planning.py` contains no numeric coefficient.
-- [ ] `GOOGLE_MAPS_API_KEY` does not appear in any response body produced by the test suite.
-- [ ] `GET /api/map/config` returns `maps_browser_api_key` and never a field named `maps_api_key`.
-- [ ] A grep for `google.maps` outside `src/components/MapConfigProvider.tsx`, `RouteMap.tsx`, `RoutePolylineLayer.tsx`, and `MapBoundsController.tsx` returns nothing.
-- [ ] Only `app/api/mode_policy.py` contains a comparison against the literal `realtime` or `simulated`.
+- [x] The import graph contains no edge from any module under `app/map/`, `app/simulation/`, `app/pricing/`, `app/weather/`, or `app/heatmap/` into `app/api/` or `main`. *(T-45, 2026-07-31)*
+- [x] `app/api/planning.py` contains no numeric coefficient. *(T-45, 2026-07-31)*
+- [x] `GOOGLE_MAPS_API_KEY` does not appear in any response body produced by the test suite. *(T-11, T-49, 2026-07-31)*
+- [x] `GET /api/map/config` returns `maps_browser_api_key` and never a field named `maps_api_key`. *(T-11, 2026-07-31)*
+- [x] A grep for `google.maps` outside `src/components/MapConfigProvider.tsx`, `RouteMap.tsx`, `RoutePolylineLayer.tsx`, and `MapBoundsController.tsx` returns nothing. *(T-56, 2026-07-31)*
+- [x] Only `app/api/mode_policy.py` contains a comparison against the literal `realtime` or `simulated`. *(T-46 — allowlist also includes schema literals in `models.py`, 2026-07-31)*
 
 ## Planned Tests
 
