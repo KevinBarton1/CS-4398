@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Analysis } from "./components/Analysis";
+import { AnalysisPanel } from "./components/AnalysisPanel";
 import { Header } from "./components/Header";
 import { MapConfigProvider } from "./components/MapConfigProvider";
 import { RouteMap } from "./components/RouteMap";
-import { RouteOptions } from "./components/RouteOptions";
+import { RouteOptionList } from "./components/RouteOptionList";
 import { RoutePlannerForm } from "./components/RoutePlannerForm";
-import { ScenarioControls } from "./components/ScenarioControls";
 import { Toast } from "./components/Toast";
 import { useRoutePlan } from "./hooks/useRoutePlan";
 
@@ -31,7 +30,7 @@ export function App() {
     resetScenario,
   } = useRoutePlan();
 
-  const showScenarioControls = mode === "simulated" && (plan?.scenario_applied ?? true);
+  const scenarioApplied = plan?.scenario_applied ?? mode === "simulated";
   const toastMessage = notice || message;
 
   return (
@@ -48,11 +47,11 @@ export function App() {
             onSubmit={submit}
             onNotice={setNotice}
           />
-          <RouteOptions
+          <RouteOptionList
             routes={plan?.routes ?? []}
-            selected={selectedId}
-            recommended={plan?.recommended_route_id}
-            mode={mode}
+            selectedRouteId={selectedId}
+            recommendedRouteId={plan?.recommended_route_id}
+            comparisonEnabled={scenarioApplied}
             onSelect={setSelectedId}
           />
         </aside>
@@ -68,23 +67,19 @@ export function App() {
           />
         </MapConfigProvider>
         <aside className={`analysis${selectedRoute ? "" : " skeleton"}`}>
-          {selectedRoute ? (
-            <Analysis route={selectedRoute} recommended={plan?.recommended_route_id} mode={mode} />
-          ) : null}
-          {showScenarioControls ? (
-            <ScenarioControls
-              scenario={scenario}
-              setScenario={setScenario}
-              onReset={resetScenario}
-            />
-          ) : (
-            <section className="card scenario-unavailable">
-              <p className="panel-disabled-note">
-                Real-Time mode plans for the current departure time using live Google Maps traffic.
-                Scenario controls apply in Simulated mode.
-              </p>
-            </section>
-          )}
+          <AnalysisPanel
+            route={selectedRoute}
+            origin={plan?.origin}
+            destination={plan?.destination}
+            weather={plan?.weather}
+            notice={plan?.notice}
+            recommendedRouteId={plan?.recommended_route_id}
+            mode={mode}
+            scenarioApplied={scenarioApplied}
+            scenario={scenario}
+            onScenarioChange={setScenario}
+            onScenarioReset={resetScenario}
+          />
         </aside>
       </main>
       <Toast
