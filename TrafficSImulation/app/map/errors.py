@@ -1,4 +1,4 @@
-class TrafficScopeError(Exception):
+class DomainError(Exception):
     code = "internal_error"
     status = 500
 
@@ -7,7 +7,7 @@ class TrafficScopeError(Exception):
         super().__init__(detail)
 
 
-class InvalidLocationError(TrafficScopeError):
+class InvalidLocationError(DomainError):
     code = "invalid_location"
     status = 400
 
@@ -17,7 +17,7 @@ class InvalidLocationError(TrafficScopeError):
         )
 
 
-class NoRouteFoundError(TrafficScopeError):
+class NoRouteFoundError(DomainError):
     code = "no_route_found"
     status = 400
 
@@ -25,7 +25,7 @@ class NoRouteFoundError(TrafficScopeError):
         super().__init__("No drivable route was found between these locations.")
 
 
-class MapsNotConfiguredError(TrafficScopeError):
+class MapsNotConfiguredError(DomainError):
     code = "maps_not_configured"
     status = 503
 
@@ -33,7 +33,7 @@ class MapsNotConfiguredError(TrafficScopeError):
         super().__init__("Google Maps is not configured on the server.")
 
 
-class UpstreamUnavailableError(TrafficScopeError):
+class UpstreamUnavailableError(DomainError):
     code = "upstream_unavailable"
     status = 502
 
@@ -43,7 +43,7 @@ class UpstreamUnavailableError(TrafficScopeError):
         )
 
 
-class UpstreamTimeoutError(TrafficScopeError):
+class UpstreamTimeoutError(DomainError):
     code = "upstream_timeout"
     status = 504
 
@@ -52,3 +52,6 @@ class UpstreamTimeoutError(TrafficScopeError):
             f"The Google {service} service did not respond in time. "
             "Try again shortly."
         )
+
+
+TrafficScopeError = DomainError

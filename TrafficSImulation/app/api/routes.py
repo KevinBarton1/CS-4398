@@ -1,4 +1,4 @@
-from app.api.models import RouteOption
+from app.api.legacy_models import RouteOption
 from app.config import ROUTE_SCORE_WEIGHTS
 from app.map.google_embed import (
     build_directions_embed_url,

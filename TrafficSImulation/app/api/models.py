@@ -1,64 +1,151 @@
-from dataclasses import asdict, dataclass
-from typing import List
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.config import DEFAULT_CONGESTION, DEFAULT_HOUR, DEFAULT_WEATHER
+from app.map.health import ProbeResult
+from app.map.types import (
+    LatLngPoint,
+    RouteBounds,
+    TrafficInterval,
+    TrafficSpeed,
+)
+
+PlanMode = Literal["simulated", "realtime"]
 
 
-class PlanRequest(BaseModel):
+class ApiModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
+class PlanRequest(ApiModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+        strict=True,
+    )
+
     origin: str = Field(min_length=1, max_length=120)
     destination: str = Field(min_length=1, max_length=120)
-    mode: str = "simulated"
-    hour: int = Field(default=17, ge=0, le=23)
-    weather: int = Field(default=1, ge=0, le=3)
-    congestion: int = Field(default=56, ge=0, le=100)
+    mode: PlanMode = "simulated"
+    hour: int = Field(default=DEFAULT_HOUR, ge=0, le=23)
+    weather: int = Field(default=DEFAULT_WEATHER, ge=0, le=3)
+    congestion: int = Field(default=DEFAULT_CONGESTION, ge=0, le=100)
 
 
-class MapEmbedRequest(BaseModel):
-    center_lat: float = Field(ge=-90, le=90)
-    center_lng: float = Field(ge=-180, le=180)
-    zoom: int = Field(ge=1, le=18)
+class Scenario(ApiModel):
+    hour: int = Field(ge=0, le=23)
+    weather: int = Field(ge=0, le=3)
+    congestion: int = Field(ge=0, le=100)
 
 
-@dataclass
-class RoadSegment:
+class WeatherState(ApiModel):
+    severity: int = Field(ge=0, le=3)
+    label: str
+    time_multiplier: float
+    price_multiplier: float
+    source: str
+
+
+class PriceFactors(ApiModel):
+    route_subtotal: float
+    traffic_multiplier: float
+    weather_multiplier: float
+    time_multiplier: float
+    unrounded_total: float
+
+
+class RoadSegment(ApiModel):
     name: str
     length_miles: float
     lanes: int
     speed_limit_mph: int
     average_speed_mph: float
     volume_vehicles_hour: int
-    congestion: float
+    congestion: float = Field(ge=0.0, le=1.0)
     capacity_vehicles_hour: int
     free_flow_minutes: float
     adjusted_minutes: float
-    traffic_ratio: float = 1.0
-    polyline: List[dict] | None = None
-
-    def to_dict(self):
-        payload = asdict(self)
-        payload["polyline"] = self.polyline or []
-        return payload
+    traffic_ratio: float
+    polyline: list[LatLngPoint]
 
 
-@dataclass
-class RouteOption:
+class RouteOption(ApiModel):
     id: str
     name: str
+    objective: str
     color: str
     distance_miles: float
     base_eta_minutes: float
     adjusted_eta_minutes: float
     estimated_price: float
-    congestion_score: int
-    objective: str
-    normalized_score: float
-    segments: List[RoadSegment]
-    factors: dict
+    congestion_score: int = Field(ge=0, le=100)
+    normalized_score: float = Field(ge=0)
     data_source: str
-    polyline: List[dict]
+    polyline: list[LatLngPoint] = Field(min_length=1)
+    traffic_intervals: list[TrafficInterval]
+    segments: list[RoadSegment] = Field(min_length=1)
+    price_factors: PriceFactors
+    bounds: RouteBounds
 
-    def to_dict(self):
-        return {
-            **asdict(self),
-            "segments": [segment.to_dict() if hasattr(segment, "to_dict") else segment for segment in self.segments],
-        }
+
+class PlanResponse(ApiModel):
+    origin: str
+    destination: str
+    mode: PlanMode
+    scenario_applied: bool
+    scenario: Scenario
+    weather: WeatherState
+    routes: list[RouteOption] = Field(min_length=1)
+    recommended_route_id: str
+    map_bounds: RouteBounds
+    notice: str
+
+
+class MapConfigResponse(ApiModel):
+    maps_browser_api_key: str
+    map_id: str | None
+    default_center: LatLngPoint
+    default_zoom: int
+    color_scheme: str
+    libraries: list[str]
+
+
+class HealthResponse(ApiModel):
+    status: str
+    service: str
+    version: str
+    google_maps_configured: bool
+    google_maps: ProbeResult
+
+
+class ValidationField(ApiModel):
+    field: str
+    message: str
+
+
+class ErrorResponse(ApiModel):
+    detail: str
+    code: str
+    fields: list[ValidationField] | None = None
+
+
+__all__ = [
+    "ErrorResponse",
+    "HealthResponse",
+    "LatLngPoint",
+    "MapConfigResponse",
+    "PlanMode",
+    "PlanRequest",
+    "PlanResponse",
+    "PriceFactors",
+    "ProbeResult",
+    "RoadSegment",
+    "RouteBounds",
+    "RouteOption",
+    "Scenario",
+    "TrafficInterval",
+    "TrafficSpeed",
+    "ValidationField",
+    "WeatherState",
+]
