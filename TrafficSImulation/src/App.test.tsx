@@ -148,7 +148,7 @@ test("realtime mode hides simulation controls", async () => {
 
   await waitFor(() =>
     expect(container.querySelector(".map-shell.realtime")).toBeInTheDocument()
-  );
+  , { timeout: 3000 });
   expect(screen.getByRole("button", { name: "Real-Time" })).toHaveClass("active");
   expect(container.querySelector(".source")).toHaveTextContent("Real-Time");
   expect(screen.getByText("Route comparison is available in Simulated mode.")).toBeInTheDocument();

@@ -1,5 +1,7 @@
 import type { Scenario } from "../types";
 
+export const SCENARIO_DEBOUNCE_MS = 180;
+
 export const DEFAULT_HOUR = 17;
 export const DEFAULT_WEATHER = 1;
 export const DEFAULT_CONGESTION = 56;

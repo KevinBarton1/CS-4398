@@ -1,73 +1,185 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { postPlan } from "../api/client";
-import { defaultScenario } from "../constants/scenario";
-import type { Mode, PlanResult, RouteOption, Scenario } from "../types";
+import { ApiClientError, postPlan } from "../api/client";
+import { defaultScenario, SCENARIO_DEBOUNCE_MS } from "../constants/scenario";
+import type { ApiError, Mode, PlanResult, RequestState, Scenario } from "../types";
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function reconcileSelection(
+  routes: PlanResult["routes"],
+  recommendedRouteId: string,
+  previousId: string | undefined,
+  preserveSelection: boolean,
+): string {
+  if (preserveSelection && previousId && routes.some((route) => route.id === previousId)) {
+    return previousId;
+  }
+  return recommendedRouteId;
+}
 
 export function useRoutePlan() {
   const [origin, setOrigin] = useState("Downtown Austin");
   const [destination, setDestination] = useState("Austin Airport");
-  const [mode, setMode] = useState<Mode>("simulated");
-  const [scenario, setScenario] = useState<Scenario>(defaultScenario);
-  const [data, setData] = useState<PlanResult | null>(null);
-  const [selectedId, setSelectedId] = useState<string>();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const debounce = useRef<number | undefined>(undefined);
+  const [mode, setModeState] = useState<Mode>("simulated");
+  const [scenario, setScenarioState] = useState<Scenario>(defaultScenario);
+  const [plan, setPlan] = useState<PlanResult | null>(null);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | undefined>();
+  const [status, setStatus] = useState<RequestState>("idle");
+  const [error, setError] = useState<ApiError | null>(null);
 
-  const calculate = useCallback(async (keepSelection = true) => {
-    setLoading(true);
-    setMessage("");
+  const abortRef = useRef<AbortController | null>(null);
+  const debounceRef = useRef<number | undefined>(undefined);
+  const requestIdRef = useRef(0);
+  const planRef = useRef<PlanResult | null>(null);
+  const originRef = useRef(origin);
+  const destinationRef = useRef(destination);
+  const modeRef = useRef(mode);
+  const scenarioRef = useRef(scenario);
+  planRef.current = plan;
+  originRef.current = origin;
+  destinationRef.current = destination;
+  modeRef.current = mode;
+  scenarioRef.current = scenario;
+
+  const executePlan = useCallback(async (preserveSelection: boolean) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const requestId = ++requestIdRef.current;
+
+    setStatus("loading");
+    setError(null);
+
+    const currentScenario = scenarioRef.current;
+
     try {
-      const result = await postPlan({ origin, destination, mode, ...scenario });
-      setData(result);
-      setSelectedId((current) =>
-        keepSelection && result.routes.some((r: RouteOption) => r.id === current)
-          ? current
-          : result.recommended_route_id
+      const result = await postPlan(
+        {
+          origin: originRef.current,
+          destination: destinationRef.current,
+          mode: modeRef.current,
+          hour: currentScenario.hour,
+          weather: currentScenario.weather,
+          congestion: currentScenario.congestion,
+        },
+        controller.signal,
       );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to calculate routes.");
-    } finally {
-      setLoading(false);
-    }
-  }, [origin, destination, mode, scenario]);
 
-  useEffect(() => {
-    void calculate(false);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
 
-  useEffect(() => {
-    if (!data) return;
-    window.clearTimeout(debounce.current);
-    debounce.current = window.setTimeout(() => void calculate(), 180);
-    return () => window.clearTimeout(debounce.current);
-  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+        setPlan(result);
+        setSelectedRouteId((current) =>
+          reconcileSelection(result.routes, result.recommended_route_id, current, preserveSelection),
+        );
+        setStatus("success");
+      } catch (caught) {
+        if (isAbortError(caught) || requestId !== requestIdRef.current) {
+          return;
+        }
 
-  useEffect(() => {
-    if (!data || mode === "realtime") return;
-    window.clearTimeout(debounce.current);
-    debounce.current = window.setTimeout(() => void calculate(), 180);
-    return () => window.clearTimeout(debounce.current);
-  }, [scenario]); // eslint-disable-line react-hooks/exhaustive-deps
+        const apiError =
+          caught instanceof ApiClientError
+            ? caught.apiError
+            : {
+                detail: caught instanceof Error ? caught.message : "Unable to calculate routes.",
+                code: "unknown_error",
+                fields: null,
+              };
 
-  const selectedRoute = useMemo(
-    () => data?.routes.find((route) => route.id === selectedId) ?? data?.routes[0],
-    [data, selectedId]
+        setError(apiError);
+        setStatus("error");
+
+        const retainedPlan = planRef.current;
+        if (retainedPlan) {
+          setModeState(retainedPlan.mode);
+        }
+      }
+    },
+  []);
+
+  const scheduleReplan = useCallback(
+    (preserveSelection: boolean) => {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        void executePlan(preserveSelection);
+      }, SCENARIO_DEBOUNCE_MS);
+    },
+    [executePlan],
   );
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    void calculate(false);
-  };
+  useEffect(() => {
+    void executePlan(false);
+    return () => {
+      abortRef.current?.abort();
+      window.clearTimeout(debounceRef.current);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleLocation = () => {
+  const setMode = useCallback(
+    (nextMode: Mode) => {
+      setModeState(nextMode);
+      modeRef.current = nextMode;
+      scheduleReplan(true);
+    },
+    [scheduleReplan],
+  );
+
+  const setScenario = useCallback(
+    (nextScenario: Scenario) => {
+      setScenarioState(nextScenario);
+      scenarioRef.current = nextScenario;
+      if (modeRef.current === "realtime") {
+        return;
+      }
+      scheduleReplan(true);
+    },
+    [scheduleReplan],
+  );
+
+  const resetScenario = useCallback(() => {
+    setScenarioState(defaultScenario);
+    scenarioRef.current = defaultScenario;
+    if (modeRef.current === "realtime") {
+      return;
+    }
+    scheduleReplan(true);
+  }, [scheduleReplan]);
+
+  const submit = useCallback(
+    (event?: FormEvent) => {
+      event?.preventDefault();
+      window.clearTimeout(debounceRef.current);
+      void executePlan(false);
+    },
+    [executePlan],
+  );
+
+  const selectRoute = useCallback((id: string) => {
+    setSelectedRouteId(id);
+  }, []);
+
+  const selectedRoute = useMemo(
+    () => plan?.routes.find((route) => route.id === selectedRouteId) ?? plan?.routes[0],
+    [plan, selectedRouteId],
+  );
+
+  const handleLocation = useCallback(() => {
     navigator.geolocation?.getCurrentPosition(
       () => setOrigin("Current location"),
-      () => setMessage("Location permission was denied. Enter a starting point manually.")
+      () =>
+        setError({
+          detail: "Location permission was denied. Enter a starting point manually.",
+          code: "unknown_error",
+          fields: null,
+        }),
     );
-  };
+  }, []);
 
-  const resetScenario = () => setScenario(defaultScenario);
+  const loading = status === "loading";
 
   return {
     origin,
@@ -75,18 +187,25 @@ export function useRoutePlan() {
     destination,
     setDestination,
     mode,
-    setMode,
     scenario,
-    setScenario,
-    data,
-    selectedId,
-    setSelectedId,
+    plan,
+    selectedRouteId,
     selectedRoute,
+    status,
+    error,
     loading,
-    message,
-    setMessage,
-    handleSubmit,
-    handleLocation,
+    submit,
+    setMode,
+    setScenario,
     resetScenario,
+    selectRoute,
+    handleSubmit: submit,
+    handleLocation,
+    setSelectedId: selectRoute,
+    selectedId: selectedRouteId,
+    data: plan,
+    message: error?.detail ?? "",
+    setMessage: (_message?: string) => setError(null),
+    setSelectedRouteId,
   };
 }
